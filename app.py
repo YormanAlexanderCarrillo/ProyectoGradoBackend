@@ -1,74 +1,78 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pandas as pd
-from Models.gasLevelModel import (predecir_metano, detectar_atipicos)
+from Models.gasLevelModel import GasLevelModel
 
 app = Flask(__name__)
-CORS(app)
-df = pd.read_csv('./data/sensor_mina_data.csv')
+CORS(app, origins="http://localhost:5173", supports_credentials=True)
 
-@app.route('/', methods=['POST'])  # Cambiado a POST para recibir datos en JSON
+
+# Inicializar y entrenar el modelo al inicio
+model = GasLevelModel()
+model.load_data('./data/sensor_mina_data.csv')
+model.train_model()
+
+
+@app.route('/predict', methods=['POST'])
 def predict_gas_level():
     data = request.get_json()
 
-    # Extraer los valores del JSON
-    temperatura = data.get("temperatura")
-    humedad = data.get("humedad")
-    tiempo_calibracion = data.get("tiempo_calibracion")
-    nivel_bateria = data.get("nivel_bateria")
+    try:
+        prediction = model.predict(
+            temperatura=data.get("temperatura"),
+            humedad=data.get("humedad"),
+            tiempo_calibracion=data.get("tiempo_calibracion"),
+            nivel_bateria=data.get("nivel_bateria")
+        )
 
-    # Realizar la predicción
-    ejemplo_pred = predecir_metano(temperatura, humedad, tiempo_calibracion, nivel_bateria)
+        return jsonify({
+            "success": True,
+            "prediction": round(prediction, 2)
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 400
 
 
-    #datos atipicos
-    # columnas_analizar = ['temperatura_sensor', 'humedad_ambiente', 'nivel_gas_metano', 'nivel_bateria']
-    # atipicos = detectar_atipicos(df, columnas_analizar)
-    #
+@app.route('/analysis', methods=['GET'])
+def get_analysis():
+    # Obtener estadísticas básicas
+    basic_stats = model.get_basic_stats()
 
-    # Retornar la respuesta en formato JSON
+    # Detectar valores atípicos
+    outliers = model.detect_outliers([
+        'temperatura_sensor',
+        'humedad_ambiente',
+        'nivel_gas_metano',
+        'nivel_bateria'
+    ])
+
+    # Análisis de degradación temporal
+    temporal_analysis = model.analyze_temporal_degradation()
+
+    # Obtener correlaciones
+    correlations = model.get_correlations()
+
     return jsonify({
-        "temperatura": temperatura,
-        "humedad": humedad,
-        "tiempo_calibracion": tiempo_calibracion,
-        "nivel_bateria": nivel_bateria,
-        "prediccion_metano": round(ejemplo_pred, 2),
-        # "atipicos": atipicos
-    })
-
-@app.route('/test', methods=['GET'])  # Cambiado a POST para recibir datos en JSON
-def atipicos():
-
-
-    #datos atipicos
-    columnas_analizar = ['temperatura_sensor', 'humedad_ambiente', 'nivel_gas_metano', 'nivel_bateria']
-    atipicos = detectar_atipicos(df, columnas_analizar)
-
-    print(atipicos)
-
-    # Retornar la respuesta en formato JSON
-    return jsonify('hola')
-
-
-@app.route('/datos_graficos', methods=['GET'])
-def datos_graficos():
-    # Datos para las gráficas
-    print('entro metodo')
-    correlaciones = df[['temperatura_sensor', 'humedad_ambiente', 'tiempo_desde_calibracion',
-                        'nivel_gas_metano', 'nivel_bateria']].corr()
-
-    # degradacion_temporal = df.groupby('dias_desde_calibracion')['nivel_gas_metano'].std().reset_index().to_dict(
-    #     orient='records')
-    json_correlaciones = correlaciones.to_json(orient='records')
-
-    # Aquí incluyes más datos para las gráficas necesarias
-    return jsonify({
-        "correlaciones": json_correlaciones,
-        # Añadir otros datos de gráficas aquí...
+        "success": True,
+        "basic_stats": basic_stats,
+        "outliers": outliers,
+        "temporal_analysis": temporal_analysis,
+        "correlations": correlations
     })
 
 
+@app.route('/model-metrics', methods=['GET'])
+def get_model_metrics():
+    # Re-entrenar el modelo y obtener métricas
+    training_results = model.train_model()
+
+    return jsonify({
+        "success": True,
+        "results": training_results
+    })
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
