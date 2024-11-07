@@ -32,7 +32,7 @@ class GasLevelModel:
 
     def get_basic_stats(self):
         return {
-            'descriptive_stats': self.df.describe().to_dict(),
+            "descriptive_stats": self.df.describe().replace({np.nan: None}).to_dict(),
             'data_shape': self.df.shape
         }
 
@@ -46,7 +46,9 @@ class GasLevelModel:
                 'values': self.df.loc[outlier_indices, column].tolist(),
                 'indices': outlier_indices.tolist()
             }
-        return outliers
+        return {
+            "outliers": outliers
+        }
 
     def analyze_temporal_degradation(self):
         error_by_day = self.df.groupby('dias_desde_calibracion').agg({
@@ -55,14 +57,17 @@ class GasLevelModel:
 
         return {
             'days': error_by_day['dias_desde_calibracion'].tolist(),
-            'std_dev': error_by_day['nivel_gas_metano']['std'].tolist(),
+            'std_dev': error_by_day['nivel_gas_metano']['std'].replace({np.nan: None}).tolist(),
             'mean': error_by_day['nivel_gas_metano']['mean'].tolist()
         }
 
     def get_correlations(self):
         columns = ['temperatura_sensor', 'humedad_ambiente',
                    'tiempo_desde_calibracion', 'nivel_gas_metano', 'nivel_bateria']
-        return self.df[columns].corr().to_dict()
+        return {
+            "correlations": self.df[columns].corr().to_dict()
+        }
+
 
     def train_model(self):
         self.X = self.df[['temperatura_sensor', 'humedad_ambiente',
