@@ -1,0 +1,688 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "API de Regresión",
+        "version": "1.0.0",
+        "description": "API para modelos de regresión"
+    },
+    "basePath": "/",
+    "schemes": ["http"],
+    "paths": {
+        "/regresion/predict": {
+            "post": {
+                "tags": ["Regresión predicción"],
+                "summary": "Realiza una predicción",
+                 "produces": [
+                    "application/json"
+                ],
+                "parameters": [{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "temperatura": {
+                                    "type": "number",
+                                    "description": "Temperatura del sensor",
+                                    "example": 100
+                                },
+                                "humedad": {
+                                    "type": "number",
+                                    "description": "Humedad ambiente del entorno",
+                                    "example": 50
+                                },
+                                "tiempo_calibracion": {
+                                    "type": "number",
+                                    "description": "Dias pasados desde la ultima calibracion",
+                                    "example": 200
+                                },
+                                "nivel_bateria": {
+                                    "type": "number",
+                                    "description": "Nivel de bateria",
+                                    "example": 15
+                                }
+                        }
+                    }
+                }],
+                "responses": {
+                    "200": {
+                        "description": "Predicción exitosa",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "prediction": {
+                                    "type": "number",
+                                    "example": 0.65
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+        },
+        "/regresion/model_metrics/metrics": {
+            "get": {
+                "tags": ["Regresión métricas del modelo"],
+                "summary": "Trae el porcentaje de error con varias tecnicas",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Datos extraídos con éxito",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "mean_squared_error": {
+                                    "type": "number",
+                                    "description": "Error cuadrático medio",
+                                    "example": 0.235
+                                },
+                                "mean_absolute_error": {
+                                    "type": "number",
+                                    "description": "Error absoluto medio",
+                                    "example": 0.189
+                                },
+                                "r2_score": {
+                                    "type": "number",
+                                    "description": "Coeficiente de determinación R²",
+                                    "example": 0.856
+                                },
+                                "error_percentage": {
+                                    "type": "number",
+                                    "description": "Porcentaje de error",
+                                    "example": 15.6
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error en la solicitud",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "Error al obtener las métricas"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/regresion/analysis/basic_stats": {
+            "get": {
+                "tags": ["Regresión Análisis"],
+                "summary": "Obtiene estadísticas básicas de los datos",
+                "produces": ["application/json"],
+                "responses": {
+                    "200": {
+                        "description": "Estadísticas básicas obtenidas con éxito",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "basic_stats": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data_shape": {
+                                            "type": "array",
+                                            "items": { "type": "integer" },
+                                            "description": "Forma de los datos (filas, columnas)"
+                                        },
+                                        "descriptive_stats": {
+                                            "type": "object",
+                                            "properties": {
+                                                "datetime": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "25%": { "type": "string", "example": "Thu, 03 Oct 2024 22:39:00 GMT" },
+                                                        "50%": { "type": "string", "example": "Thu, 10 Oct 2024 21:18:00 GMT" },
+                                                        "75%": { "type": "string", "example": "Thu, 17 Oct 2024 19:57:00 GMT" },
+                                                        "count": { "type": "integer", "example": 10000 },
+                                                        "max": { "type": "string", "example": "Thu, 24 Oct 2024 18:36:00 GMT" },
+                                                        "mean": { "type": "string", "example": "Thu, 10 Oct 2024 21:18:00 GMT" },
+                                                        "min": { "type": "string", "example": "Fri, 27 Sep 2024 00:00:00 GMT" },
+                                                        "std": { "type": "null" }
+                                                    }
+                                                },
+                                                "dias_desde_calibracion": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "25%": { "type": "number", "example": 7.6125 },
+                                                        "50%": { "type": "number", "example": 15.062083333333334 },
+                                                        "75%": { "type": "number", "example": 22.3403125 },
+                                                        "count": { "type": "number", "example": 10000.0 },
+                                                        "max": { "type": "number", "example": 29.997083333333332 },
+                                                        "mean": { "type": "number", "example": 15.001512916666664 },
+                                                        "min": { "type": "number", "example": 0.00125 },
+                                                        "std": { "type": "number", "example": 8.60321181675019 }
+                                                    }
+                                                },
+                                                "humedad_ambiente": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "25%": { "type": "number", "example": 68.89 },
+                                                        "50%": { "type": "number", "example": 77.71 },
+                                                        "75%": { "type": "number", "example": 86.48 },
+                                                        "count": { "type": "number", "example": 10000.0 },
+                                                        "max": { "type": "number", "example": 95.0 },
+                                                        "mean": { "type": "number", "example": 77.65858699999998 },
+                                                        "min": { "type": "number", "example": 60.01 },
+                                                        "std": { "type": "number", "example": 10.12529729825099 }
+                                                    }
+                                                },
+                                                "nivel_bateria": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "25%": { "type": "number", "example": 40.23 },
+                                                        "50%": { "type": "number", "example": 59.95 },
+                                                        "75%": { "type": "number", "example": 80.09 },
+                                                        "count": { "type": "number", "example": 10000.0 },
+                                                        "max": { "type": "number", "example": 100.0 },
+                                                        "mean": { "type": "number", "example": 59.996092999999995 },
+                                                        "min": { "type": "number", "example": 15.37 },
+                                                        "std": { "type": "number", "example": 23.162244975921126 }
+                                                    }
+                                                },
+                                                "nivel_gas_metano": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "25%": { "type": "number", "example": 0.28 },
+                                                        "50%": { "type": "number", "example": 0.5 },
+                                                        "75%": { "type": "number", "example": 0.81 },
+                                                        "count": { "type": "number", "example": 10000.0 },
+                                                        "max": { "type": "number", "example": 3.73 },
+                                                        "mean": { "type": "number", "example": 0.5962740000000001 },
+                                                        "min": { "type": "number", "example": 0.01 },
+                                                        "std": { "type": "number", "example": 0.4240588632677681 }
+                                                    }
+                                                },
+                                                "temperatura_sensor": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "25%": { "type": "number", "example": 12.3175 },
+                                                        "50%": { "type": "number", "example": 24.63 },
+                                                        "75%": { "type": "number", "example": 37.005 },
+                                                        "count": { "type": "number", "example": 10000.0 },
+                                                        "max": { "type": "number", "example": 49.99 },
+                                                        "mean": { "type": "number", "example": 24.707978 },
+                                                        "min": { "type": "number", "example": 0.0 },
+                                                        "std": { "type": "number", "example": 14.381525677048176 }
+                                                    }
+                                                },
+                                                "tiempo_desde_calibracion": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "25%": { "type": "number", "example": 182.7 },
+                                                        "50%": { "type": "number", "example": 361.49 },
+                                                        "75%": { "type": "number", "example": 536.1675 },
+                                                        "count": { "type": "number", "example": 10000.0 },
+                                                        "max": { "type": "number", "example": 719.93 },
+                                                        "mean": { "type": "number", "example": 360.03631 },
+                                                        "min": { "type": "number", "example": 0.03 },
+                                                        "std": { "type": "number", "example": 206.47708360200454 }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "success": { "type": "boolean", "example": true }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error en la solicitud",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": { "type": "string", "example": "Error al obtener estadísticas básicas" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/regresion/analysis/outliers": {
+            "get": {
+                "tags": ["Regresión Análisis"],
+                "summary": "Obtener datos de outliers en las variables monitoreadas",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Outliers detectados en las variables monitoreadas",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "outliers": {
+                                    "type": "object",
+                                    "properties": {
+                                        "humedad_ambiente": {
+                                            "type": "object",
+                                            "properties": {
+                                                "count": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "indices": {
+                                                    "type": "array",
+                                                    "items": {"type": "integer"},
+                                                    "example": []
+                                                },
+                                                "values": {
+                                                    "type": "array",
+                                                    "items": {"type": "number"},
+                                                    "example": []
+                                                }
+                                            }
+                                        },
+                                        "nivel_bateria": {
+                                            "type": "object",
+                                            "properties": {
+                                                "count": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "indices": {
+                                                    "type": "array",
+                                                    "items": {"type": "integer"},
+                                                    "example": []
+                                                },
+                                                "values": {
+                                                    "type": "array",
+                                                    "items": {"type": "number"},
+                                                    "example": []
+                                                }
+                                            }
+                                        },
+                                        "nivel_gas_metano": {
+                                            "type": "object",
+                                            "properties": {
+                                                "count": {
+                                                    "type": "integer",
+                                                    "example": 146
+                                                },
+                                                "indices": {
+                                                    "type": "array",
+                                                    "items": {"type": "integer"},
+                                                    "example": [1, 274, 341, 377]
+                                                },
+                                                "values": {
+                                                    "type": "array",
+                                                    "items": {"type": "number"},
+                                                    "example": [1.87, 2.84, 1.9, 2.02]
+                                                }
+                                            }
+                                        },
+                                        "temperatura_sensor": {
+                                            "type": "object",
+                                            "properties": {
+                                                "count": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "indices": {
+                                                    "type": "array",
+                                                    "items": {"type": "integer"},
+                                                    "example": []
+                                                },
+                                                "values": {
+                                                    "type": "array",
+                                                    "items": {"type": "number"},
+                                                    "example": []
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "success": {
+                                    "type": "boolean",
+                                    "example": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error en la solicitud",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "Error al obtener datos de outliers"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/regresion/analysis/temporal_analysis": {
+            "get": {
+                "tags": ["Regresión Análisis"],
+                "summary": "Obtiene análisis temporal de las variables monitoreadas",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Datos de análisis temporal obtenidos exitosamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "example": true
+                                },
+                                "temporal_analysis": {
+                                    "type": "object",
+                                    "properties": {
+                                        "days": {
+                                            "type": "array",
+                                            "items": {"type": "number"},
+                                            "description": "Días en el análisis temporal",
+                                            "example": [0.00125, 0.0033333333333333335, 0.00375, 0.005833333333333334]
+                                        },
+                                        "mean": {
+                                            "type": "array",
+                                            "items": {"type": "number"},
+                                            "description": "Media de las variables para cada día",
+                                            "example": [0.21, 1.32, 1.33, 0.06, 0.57, 0.26]
+                                        },
+                                        "std_dev": {
+                                            "type": "array",
+                                            "items": {"type": ["number", "null"]},
+                                            "description": "Desviación estándar de las variables para cada día (valores nulos si no hay datos)",
+                                            "example": [0.5727564927611035, 0.12727922061357852, null, null]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error en la solicitud",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "Error al obtener el análisis temporal"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/regresion/analysis/correlations": {
+            "get": {
+                "tags": ["Regresión Análisis"],
+                "summary": "Obtiene las correlaciones entre variables monitoreadas",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Correlaciones obtenidas exitosamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "example": true
+                                },
+                                "correlations": {
+                                    "type": "object",
+                                    "properties": {
+                                        "correlations": {
+                                            "type": "object",
+                                            "properties": {
+                                                "humedad_ambiente": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "humedad_ambiente": {"type": "number", "example": 1.0},
+                                                        "nivel_bateria": {"type": "number", "example": -0.011024507922828063},
+                                                        "nivel_gas_metano": {"type": "number", "example": 0.002716962481558675},
+                                                        "temperatura_sensor": {"type": "number", "example": -0.005123603511891161},
+                                                        "tiempo_desde_calibracion": {"type": "number", "example": -0.024223076936115147}
+                                                    }
+                                                },
+                                                "nivel_bateria": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "humedad_ambiente": {"type": "number", "example": -0.011024507922828063},
+                                                        "nivel_bateria": {"type": "number", "example": 1.0},
+                                                        "nivel_gas_metano": {"type": "number", "example": 0.007704657280563372},
+                                                        "temperatura_sensor": {"type": "number", "example": 0.010333062953483392},
+                                                        "tiempo_desde_calibracion": {"type": "number", "example": 0.032213208765253375}
+                                                    }
+                                                },
+                                                "nivel_gas_metano": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "humedad_ambiente": {"type": "number", "example": 0.002716962481558675},
+                                                        "nivel_bateria": {"type": "number", "example": 0.007704657280563372},
+                                                        "nivel_gas_metano": {"type": "number", "example": 1.0},
+                                                        "temperatura_sensor": {"type": "number", "example": 0.014934369091902922},
+                                                        "tiempo_desde_calibracion": {"type": "number", "example": -0.004349856131181024}
+                                                    }
+                                                },
+                                                "temperatura_sensor": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "humedad_ambiente": {"type": "number", "example": -0.005123603511891161},
+                                                        "nivel_bateria": {"type": "number", "example": 0.010333062953483392},
+                                                        "nivel_gas_metano": {"type": "number", "example": 0.014934369091902922},
+                                                        "temperatura_sensor": {"type": "number", "example": 1.0},
+                                                        "tiempo_desde_calibracion": {"type": "number", "example": -0.009348076218692967}
+                                                    }
+                                                },
+                                                "tiempo_desde_calibracion": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "humedad_ambiente": {"type": "number", "example": -0.024223076936115147},
+                                                        "nivel_bateria": {"type": "number", "example": 0.032213208765253375},
+                                                        "nivel_gas_metano": {"type": "number", "example": -0.004349856131181024},
+                                                        "temperatura_sensor": {"type": "number", "example": -0.009348076218692967},
+                                                        "tiempo_desde_calibracion": {"type": "number", "example": 1.0}
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error en la solicitud",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "Error al obtener las correlaciones"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/regresion/model_metrics/feature_importance": {
+            "get": {
+                "tags": ["Regresión métricas del modelo"],
+                "summary": "Obtiene la importancia de características en el modelo",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Importancia de características obtenida exitosamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "example": true
+                                },
+                                "feature_importance": {
+                                    "type": "object",
+                                    "properties": {
+                                        "coefficients": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number",
+                                                "example": [0.001, 0.444, -0.1, 0.5444 ]
+                                            },
+                                            "description": "Coeficientes de importancia de cada variable en el modelo"
+                                        },
+                                        "variables": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "example": ["temperatura_sensor", "humedad_ambiente", "tiempo_desde_calibracion", "nivel_bateria"]
+                                            },
+                                            "description": "Nombres de las variables correspondientes a los coeficientes"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error en la solicitud",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "Error al obtener la importancia de las características"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/regresion/model_metrics/residuals": {
+            "get": {
+                "tags": ["Regresión métricas del modelo"],
+                "summary": "Obtiene los residuos del modelo",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Residuos obtenidos exitosamente",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "example": true
+                                },
+                                "metrics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "predictions": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number",
+                                                "example": [0.586794, 0.58673, 0.516794]
+                                            },
+                                            "description": "Lista de valores de predicción del modelo"
+                                        },
+                                        "values": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number",
+                                                "example": [-0.3880242, 0.3880242, 0.80242]
+                                            },
+                                            "description": "Lista de valores residuales correspondientes"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error en la solicitud",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "Error al obtener los residuos del modelo"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/regresion/model_metrics/prediction_data": {
+            "get": {
+                "tags": ["Regresión métricas del modelo"],
+                "summary": "Obtiene datos de predicciones y valores reales",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Datos de predicción obtenidos con éxito",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "example": true
+                                },
+                                "prediction_data": {
+                                    "type": "object",
+                                    "properties": {
+                                        "predicted_values": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number",
+                                                "example": [0.5867946, 0.3867946, 0.4867946]
+                                            },
+                                            "description": "Lista de valores predichos por el modelo"
+                                        },
+                                        "real_values": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "number",
+                                                "example": [0.87, 0.47, 0.17]
+                                            },
+                                            "description": "Lista de valores reales correspondientes"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error en la solicitud",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "Error al obtener los datos de predicción"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+}

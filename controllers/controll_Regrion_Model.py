@@ -97,7 +97,10 @@ def get_analysis_correlations():
 
 # model metrics inicio
 def get_model_metrics_metrics():
-    # Re-entrenar el modelo y obtener métricas
+    # Muestra cuatro tipo de errores (MSE (Error Cuadrático Medio), RMSE (Raíz del Error Cuadrático Medio), MAE (Error Absoluto Medio), R² (Coeficiente de Determinaci)
+    # Con MSE y RMSE: Puedes determinar qué tan grandes son los errores de predicción en términos absolutos
+    # Con MAE: Puedes explicar el error promedio a usuarios no técnicos de manera más intuitiva
+    # Con R²: Puedes determinar qué porcentaje de la variabilidad en los datos explica tu modelo
     training_results = model.train_model()
 
     metrics = training_results["metrics"]
@@ -108,7 +111,10 @@ def get_model_metrics_metrics():
     })
 
 def get_model_metrics_feature_importance():
-    # Re-entrenar el modelo y obtener métricas
+    #Importancia de Variables
+    #Visualiza el impacto relativo de cada variable en las predicciones
+    #Ayuda a identificar qué factores son más importantes en el modelo: temperatura_sensor, humedad_ambiente, tiempo_desde_calibracion, nivel_bateria
+    #Determinar qué sensores son críticos para el mantenimiento
     training_results = model.train_model()
 
     feature_importance = training_results["feature_importance"]
@@ -119,7 +125,10 @@ def get_model_metrics_feature_importance():
     })
 
 def get_model_metrics_prediction_data():
-    # Re-entrenar el modelo y obtener métricas
+    #Gráfico de Dispersión de Predicciones vs Valores Reales
+    #Muestra qué tan bien se ajustan las predicciones a los valores reales
+    #Detectar si hay valores atípicos que afectan al rendimiento
+    #Determinar si el modelo tiene tendencia a sobre-predecir o sub-predecir
     training_results = model.train_model()
 
     prediction_data = training_results["prediction_data"]
@@ -130,7 +139,13 @@ def get_model_metrics_prediction_data():
     })
 
 def get_model_metrics_residuals():
-    # Re-entrenar el modelo y obtener métricas
+    # Análisis de Residuos
+    # Muestra la distribución de los errores del modelo
+    # Ayuda a identificar patrones o sesgos en las predicciones
+    # Identificar si hay sesgos sistemáticos en las predicciones
+    # Determinar si hay rangos específicos donde el modelo necesita mejoras
+    # Evaluar si los errores son aleatorios o siguen algún patrón que se pueda corregir
+    # Decidir si el modelo necesita reentrenamiento basado en la distribución de errores
     training_results = model.train_model()
 
     residuals = training_results["residuals"]
@@ -140,3 +155,4 @@ def get_model_metrics_residuals():
         "metrics": residuals
     })
 
+# model metrics fin

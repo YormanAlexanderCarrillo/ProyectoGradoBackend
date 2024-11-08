@@ -12,7 +12,7 @@ def basic_stats():
 def outliers():
     return get_analysis_outliers()
 
-@bp.route('/analysis/temporalAnalysis', methods=['GET'])
+@bp.route('/analysis/temporal_analysis', methods=['GET'])
 def temporal_analysis():
     return get_analysis_temporal_analysis()
 
@@ -21,7 +21,7 @@ def correlations():
     return get_analysis_correlations()
 
 @bp.route('/predict', methods=['POST'])
-def predict_gas_level():
+def predict_gas():
     return predict_gas_level()
 
 @bp.route('/model_metrics/metrics', methods=['GET'])
