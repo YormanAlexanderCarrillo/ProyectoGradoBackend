@@ -6,7 +6,6 @@
         "description": "API para modelos de regresión"
     },
     "basePath": "/",
-    "schemes": ["http"],
     "paths": {
         "/regresion/predict": {
             "post": {

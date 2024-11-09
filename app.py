@@ -6,7 +6,7 @@ from routes.route_regresion_model import bp as regresion_bp
 import json
 
 app = Flask(__name__)
-CORS(app, origins="http://localhost:5173", supports_credentials=True)
+CORS(app, origins="*", supports_credentials=True)
 
 # Configuración de Swagger
 SWAGGER_URL = '/api/doc'  # URL para accerder a la documentacion
