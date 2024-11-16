@@ -23,6 +23,7 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
 
 # Registrar blueprints
 app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
+
 app.register_blueprint(regresion_bp, url_prefix='/regresion')
 
 # Ruta para servir el archivo swagger.json

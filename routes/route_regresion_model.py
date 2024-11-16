@@ -1,5 +1,5 @@
 from flask import Blueprint
-from controllers.controll_Regrion_Model import  get_analysis_basic_stats, get_analysis_outliers, get_analysis_temporal_analysis,get_analysis_correlations, predict_gas_level, get_model_metrics_metrics, get_model_metrics_feature_importance, get_model_metrics_residuals, get_model_metrics_prediction_data
+from controllers.controll_Regrion_Model import  get_analysis_basic_stats, get_analysis_outliers, get_analysis_temporal_analysis,get_analysis_correlations, predict_gas_level, get_model_metrics_metrics, get_model_metrics_feature_importance, get_model_metrics_residuals, get_model_metrics_prediction_data, predict_data_gas_future
 
 
 bp = Blueprint('regresion', __name__)
@@ -40,3 +40,6 @@ def residuals():
 def prediction_data():
     return get_model_metrics_prediction_data()
 
+@bp.route('/predict/prediction_future', methods=['POST'])
+def prediction_gas_future():
+    return predict_data_gas_future()

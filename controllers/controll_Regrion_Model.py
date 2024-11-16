@@ -156,3 +156,26 @@ def get_model_metrics_residuals():
     })
 
 # model metrics fin
+
+def predict_data_gas_future():
+
+    try:
+
+        data = request.get_json()
+
+        hours = data.get("hours")
+        print(hours)
+        prediction = model.predict_gas_future(hours_ahead=hours)
+
+        return jsonify({
+            "success": True,
+            "prediction": prediction
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+

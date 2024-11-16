@@ -61,6 +61,46 @@
                 }
             }
         },
+        "/regresion/predict/prediction_future": {
+            "post": {
+                "tags": ["Regresión predicción"],
+                "summary": "Realiza una prediccion segun el numero de horas: cada hora es una prediccion",
+                 "produces": [
+                    "application/json"
+                ],
+                "parameters": [{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "hours": {
+                                "type": "number",
+                                "description": "Numero de horas a predecir",
+                                "example": 5
+                            }
+
+                        }
+                    }
+                }],
+                "responses": {
+                    "200": {
+                        "description": "Predicción exitosa",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "prediction": {
+                                    "type": "number",
+                                    "example": 0.65
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+        },
         "/regresion/model_metrics/metrics": {
             "get": {
                 "tags": ["Regresión métricas del modelo"],
