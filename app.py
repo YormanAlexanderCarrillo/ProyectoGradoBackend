@@ -3,6 +3,7 @@ from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
 from routes.route_regresion_model import bp as regresion_bp
+from routes.route_randomForest_model import bp as random_forest_bp
 import json
 
 app = Flask(__name__)
@@ -25,6 +26,7 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
 app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 
 app.register_blueprint(regresion_bp, url_prefix='/regresion')
+app.register_blueprint(random_forest_bp, url_prefix="/random_forest")
 
 # Ruta para servir el archivo swagger.json
 @app.route('/static/swagger.json')

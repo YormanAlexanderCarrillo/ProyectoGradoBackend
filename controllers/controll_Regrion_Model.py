@@ -152,7 +152,7 @@ def get_model_metrics_residuals():
 
     return jsonify({
         "success": True,
-        "metrics": residuals
+        "residuals": residuals
     })
 
 # model metrics fin
