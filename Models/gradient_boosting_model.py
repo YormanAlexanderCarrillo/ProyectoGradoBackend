@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import random
 import math
+import os
+import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
@@ -10,14 +12,17 @@ from scipy import stats
 from datetime import datetime, timedelta
 
 
+
 class GasLevelGradientBoostingModel:
-    def __init__(self):
+    def __init__(self, model_path='gas_model.pkl', scaler_path='scaler.pkl'):
         self.model = None
         self.scaler = None
         self.df = None
         self.X = None
         self.y = None
         self.last_known_values = None
+        self.model_path = model_path
+        self.scaler_path = scaler_path
 
     def load_data(self, csv_path):
         self.df = pd.read_csv(csv_path)
@@ -79,9 +84,9 @@ class GasLevelGradientBoostingModel:
 
         # Inicialización del modelo Gradient Boosting con hiperparámetros
         self.model = GradientBoostingRegressor(
-            n_estimators=100,
-            learning_rate=0.1,
-            max_depth=3,
+            n_estimators=200,
+            learning_rate=0.01,
+            max_depth=5,
             min_samples_split=5,
             min_samples_leaf=3,
             subsample=0.8,
