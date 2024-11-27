@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import random
 import math
+import pickle
 import os
-import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 
 
 class GasLevelGradientBoostingModel:
-    def __init__(self, model_path='gas_model.pkl', scaler_path='scaler.pkl'):
+    def __init__(self, model_path='./trained_models/gradient_boosting_model.pkl'):
         self.model = None
         self.scaler = None
         self.df = None
@@ -22,7 +22,8 @@ class GasLevelGradientBoostingModel:
         self.y = None
         self.last_known_values = None
         self.model_path = model_path
-        self.scaler_path = scaler_path
+        self.training_results = None  # Almacena los resultados del entrenamiento
+        self._load_trained_model()
 
     def load_data(self, csv_path):
         self.df = pd.read_csv(csv_path)
@@ -69,10 +70,105 @@ class GasLevelGradientBoostingModel:
             "correlations": self.df[columns].corr().to_dict()
         }
 
-    def train_model(self):
-        self.X = self.df[['temperatura_sensor', 'humedad_ambiente',
-                          'tiempo_desde_calibracion', 'nivel_bateria']]
-        self.y = self.df['nivel_gas_metano']
+    def _load_trained_model(self):
+        """Intenta cargar un modelo previamente entrenado y sus resultados si existen."""
+        if os.path.exists(self.model_path):
+            try:
+                with open(self.model_path, 'rb') as f:
+                    saved_data = pickle.load(f)
+                self.model = saved_data['model']
+                self.scaler = saved_data['scaler']
+                self.training_results = saved_data.get('training_results')
+                print("Modelo cargado exitosamente desde", self.model_path)
+                return True
+            except Exception as e:
+                print(f"Error al cargar el modelo: {str(e)}")
+                self.model = None
+                self.scaler = None
+                self.training_results = None
+        return False
+
+    def _save_trained_model(self):
+        """Guarda el modelo entrenado, el scaler y los resultados del entrenamiento."""
+        if self.model is not None and self.scaler is not None:
+            try:
+                with open(self.model_path, 'wb') as f:
+                    pickle.dump({
+                        'model': self.model,
+                        'scaler': self.scaler,
+                        'training_results': self.training_results
+                    }, f)
+                print("Modelo guardado exitosamente en", self.model_path)
+                return True
+            except Exception as e:
+                print(f"Error al guardar el modelo: {str(e)}")
+        return False
+
+    def get_training_results(self):
+        """Retorna los resultados del entrenamiento sin reentrenar."""
+
+        print("usted si debe venir aca")
+
+        if self.training_results is None:
+            if self.model is None:
+                raise ValueError("El modelo no está entrenado. Ejecute train_model() primero.")
+            # Si no hay resultados guardados pero el modelo existe, los recalculamos una vez
+            self._calculate_training_results()
+        return self.training_results
+
+    def _calculate_training_results(self):
+
+        print("mas o menos usted deberia estar aca")
+
+        """Calcula las métricas y resultados del modelo sin reentrenar."""
+        if self.model is None or self.scaler is None:
+            raise ValueError("El modelo no está entrenado.")
+
+        X_scaled = self.scaler.transform(self.X)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_scaled, self.y, test_size=0.2, random_state=42
+        )
+
+        y_pred = self.model.predict(X_test)
+
+        self.training_results = {
+            'metrics': {
+                'mse': mean_squared_error(y_test, y_pred),
+                'rmse': np.sqrt(mean_squared_error(y_test, y_pred)),
+                'mae': mean_absolute_error(y_test, y_pred),
+                'r2': r2_score(y_test, y_pred)
+            },
+            'prediction_data': {
+                'real_values': y_test.tolist(),
+                'predicted_values': y_pred.tolist()
+            },
+            'feature_importance': {
+                'variables': self.X.columns.tolist(),
+                'importances': self.model.feature_importances_.tolist()
+            },
+            'residuals': {
+                'values': (y_test - y_pred).tolist(),
+                'predictions': y_pred.tolist()
+            }
+        }
+
+    def train_model(self, force_retrain=False):
+        """
+        Entrena el modelo solo si es necesario y guarda los resultados.
+        """
+
+        print("Usted que hace aqui")
+
+        if self.model is not None and not force_retrain:
+            return self.get_training_results()
+
+        if self.X is None or self.y is None:
+            if self.df is None:
+                raise ValueError("No hay datos cargados. Llame a load_data() primero.")
+
+            self.X = self.df[['temperatura_sensor', 'humedad_ambiente',
+                              'tiempo_desde_calibracion', 'nivel_bateria']]
+            self.y = self.df['nivel_gas_metano']
 
         self.scaler = StandardScaler()
         X_scaled = self.scaler.fit_transform(self.X)
@@ -82,7 +178,6 @@ class GasLevelGradientBoostingModel:
             X_scaled, self.y, test_size=0.2, random_state=42
         )
 
-        # Inicialización del modelo Gradient Boosting con hiperparámetros
         self.model = GradientBoostingRegressor(
             n_estimators=200,
             learning_rate=0.01,
@@ -95,37 +190,13 @@ class GasLevelGradientBoostingModel:
 
         self.model.fit(X_train, y_train)
 
-        y_pred = self.model.predict(X_test)
+        # Calcular y guardar los resultados del entrenamiento
+        self._calculate_training_results()
 
-        metrics = {
-            'mse': mean_squared_error(y_test, y_pred),
-            'rmse': np.sqrt(mean_squared_error(y_test, y_pred)),
-            'mae': mean_absolute_error(y_test, y_pred),
-            'r2': r2_score(y_test, y_pred)
-        }
+        # Guardar todo
+        self._save_trained_model()
 
-        prediction_data = {
-            'real_values': y_test.tolist(),
-            'predicted_values': y_pred.tolist()
-        }
-
-        # Importancia de características usando el atributo feature_importances_
-        feature_importance = {
-            'variables': self.X.columns.tolist(),
-            'importances': self.model.feature_importances_.tolist()
-        }
-
-        residuals = {
-            'values': (y_test - y_pred).tolist(),
-            'predictions': y_pred.tolist()
-        }
-
-        return {
-            'metrics': metrics,
-            'prediction_data': prediction_data,
-            'feature_importance': feature_importance,
-            'residuals': residuals
-        }
+        return self.training_results
 
     def predict(self, temperatura, humedad, tiempo_calibracion, nivel_bateria):
         if self.model is None:
