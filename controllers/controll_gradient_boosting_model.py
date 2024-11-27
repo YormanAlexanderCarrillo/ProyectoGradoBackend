@@ -4,8 +4,10 @@ from Models.gradient_boosting_model import GasLevelGradientBoostingModel
 
 model = GasLevelGradientBoostingModel()
 model.load_data('./data/sensor_mina_data.csv')
-model.train_model()
 
+
+if model.model is None:
+ training_results = model.train_model()
 
 def predict_gas_level():
     data = request.get_json()
@@ -69,9 +71,7 @@ def get_analysis_correlations():
     })
 
 def get_model_metrics_metrics():
-    training_results = model.train_model()
-
-    metrics = training_results["metrics"]
+    metrics = model.get_training_results()["metrics"]
 
     return jsonify({
         "success": True,
@@ -79,9 +79,9 @@ def get_model_metrics_metrics():
     })
 
 def get_model_metrics_feature_importance():
-    training_results = model.train_model()
 
-    feature_importance = training_results["feature_importance"]
+    feature_importance = model.get_training_results()["feature_importance"]
+
 
     return jsonify({
         "success": True,
@@ -90,10 +90,8 @@ def get_model_metrics_feature_importance():
 
 
 def get_model_metrics_prediction_data():
+    prediction_data = model.get_training_results()["prediction_data"]
 
-    training_results = model.train_model()
-
-    prediction_data = training_results["prediction_data"]
 
     return jsonify({
         "success": True,
@@ -101,9 +99,8 @@ def get_model_metrics_prediction_data():
     })
 
 def get_model_metrics_residuals():
-    training_results = model.train_model()
+    residuals = model.get_training_results()["residuals"]
 
-    residuals = training_results["residuals"]
 
     return jsonify({
         "success": True,
