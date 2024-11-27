@@ -5,9 +5,8 @@ from Models.gradient_boosting_model import GasLevelGradientBoostingModel
 model = GasLevelGradientBoostingModel()
 model.load_data('./data/sensor_mina_data.csv')
 
-
 if model.model is None:
- training_results = model.train_model()
+    model.train_model()
 
 def predict_gas_level():
     data = request.get_json()

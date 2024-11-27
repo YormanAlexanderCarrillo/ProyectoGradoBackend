@@ -23,13 +23,18 @@ class GasLevelGradientBoostingModel:
         self.last_known_values = None
         self.model_path = model_path
         self.training_results = None  # Almacena los resultados del entrenamiento
+        self.feature_names = ['temperatura_sensor', 'humedad_ambiente',
+                              'tiempo_desde_calibracion', 'nivel_bateria']
         self._load_trained_model()
 
     def load_data(self, csv_path):
-        self.df = pd.read_csv(csv_path)
-        self.df['datetime'] = pd.to_datetime(self.df['fecha'] + ' ' + self.df['hora'])
-        self.df['dias_desde_calibracion'] = self.df['tiempo_desde_calibracion'] / 24
-        self.update_last_known_values()
+        if self.df is None:
+            self.df = pd.read_csv(csv_path)
+            self.df['datetime'] = pd.to_datetime(self.df['fecha'] + ' ' + self.df['hora'])
+            self.df['dias_desde_calibracion'] = self.df['tiempo_desde_calibracion'] / 24
+            self.X = self.df[self.feature_names]
+            self.y = self.df['nivel_gas_metano']
+            self.update_last_known_values()
         return self.get_basic_stats()
 
     def get_basic_stats(self):
@@ -71,7 +76,7 @@ class GasLevelGradientBoostingModel:
         }
 
     def _load_trained_model(self):
-        """Intenta cargar un modelo previamente entrenado y sus resultados si existen."""
+        #carga el modelo entrenado y sus resultados si lo hay
         if os.path.exists(self.model_path):
             try:
                 with open(self.model_path, 'rb') as f:
@@ -79,6 +84,9 @@ class GasLevelGradientBoostingModel:
                 self.model = saved_data['model']
                 self.scaler = saved_data['scaler']
                 self.training_results = saved_data.get('training_results')
+                self.X = saved_data.get('X')
+                self.y = saved_data.get('y')
+                self.df = saved_data.get('df')
                 print("Modelo cargado exitosamente desde", self.model_path)
                 return True
             except Exception as e:
@@ -86,17 +94,23 @@ class GasLevelGradientBoostingModel:
                 self.model = None
                 self.scaler = None
                 self.training_results = None
+                self.X = None
+                self.y = None
+                self.df = None
         return False
 
     def _save_trained_model(self):
-        """Guarda el modelo entrenado, el scaler y los resultados del entrenamiento."""
+        #Guardar el modelo entredado con el scaler y los resultados obtenidos del entranamiento
         if self.model is not None and self.scaler is not None:
             try:
                 with open(self.model_path, 'wb') as f:
                     pickle.dump({
                         'model': self.model,
                         'scaler': self.scaler,
-                        'training_results': self.training_results
+                        'training_results': self.training_results,
+                        'X': self.X,
+                        'y': self.y,
+                        'df': self.df
                     }, f)
                 print("Modelo guardado exitosamente en", self.model_path)
                 return True
@@ -106,7 +120,7 @@ class GasLevelGradientBoostingModel:
 
     def get_training_results(self):
         """Retorna los resultados del entrenamiento sin reentrenar."""
-
+        #Cargar los resultados para metrics y re entrenar el modelo cada vez que se ejecute un metodo de metrics
         print("usted si debe venir aca")
 
         if self.training_results is None:
@@ -120,7 +134,6 @@ class GasLevelGradientBoostingModel:
 
         print("mas o menos usted deberia estar aca")
 
-        """Calcula las métricas y resultados del modelo sin reentrenar."""
         if self.model is None or self.scaler is None:
             raise ValueError("El modelo no está entrenado.")
 
@@ -153,10 +166,8 @@ class GasLevelGradientBoostingModel:
         }
 
     def train_model(self, force_retrain=False):
-        """
-        Entrena el modelo solo si es necesario y guarda los resultados.
-        """
 
+        #Entrenar el modelo si no existe entreanamiento y guardar el entrenamiento
         print("Usted que hace aqui")
 
         if self.model is not None and not force_retrain:
@@ -199,15 +210,13 @@ class GasLevelGradientBoostingModel:
         return self.training_results
 
     def predict(self, temperatura, humedad, tiempo_calibracion, nivel_bateria):
-        if self.model is None:
-            raise ValueError("Modelo no entrenado. Llame a train_model() primero.")
+
+        if self.model is None or self.scaler is None:
+            raise ValueError("Modelo no entrenado o cargado correctamente.")
 
         nuevos_datos = pd.DataFrame([[temperatura, humedad, tiempo_calibracion, nivel_bateria]],
-                                    columns=self.X.columns)
-        nuevos_datos_scaled = pd.DataFrame(
-            self.scaler.transform(nuevos_datos),
-            columns=self.X.columns
-        )
+                                    columns=self.feature_names)
+        nuevos_datos_scaled = self.scaler.transform(nuevos_datos)
         return float(self.model.predict(nuevos_datos_scaled)[0])
 
     def update_last_known_values(self):
@@ -236,7 +245,7 @@ class GasLevelGradientBoostingModel:
             }
 
     def predict_gas_future(self, hours_ahead):
-        if self.model is None:
+        if self.model is None or self.scaler is None:
             raise ValueError("Modelo no entrenado. Llame a train_model() primero.")
 
         self.update_last_known_values()
