@@ -4,8 +4,9 @@ from Models.randomForestModel import GasLevelRandomForest
 
 model = GasLevelRandomForest()
 model.load_data('./data/sensor_mina_data.csv')
-model.train_model()
 
+if model.model is None:
+    model.train_model()
 
 def predict_gas_level():
     data = request.get_json()
@@ -19,11 +20,6 @@ def predict_gas_level():
             nivel_bateria=data.get("nivel_bateria")
         )
 
-        #     'prediction': mean_prediction,
-        #     'confidence_interval': confidence_interval,
-        #     'lower_bound': mean_prediction - confidence_interval,
-        #     'upper_bound': mean_prediction + confidence_interval
-
         prediction = predictionData["prediction"]
 
         return jsonify({
@@ -36,7 +32,6 @@ def predict_gas_level():
             "success": False,
             "error": str(e)
         }), 400
-
 
 def get_analysis_basic_stats():
     basic_stats = model.get_basic_stats()
@@ -76,9 +71,7 @@ def get_analysis_correlations():
     })
 
 def get_model_metrics_metrics():
-    training_results = model.train_model()
-
-    metrics = training_results["metrics"]
+    metrics = model.get_training_results()["metrics"]
 
     return jsonify({
         "success": True,
@@ -86,21 +79,15 @@ def get_model_metrics_metrics():
     })
 
 def get_model_metrics_feature_importance():
-    training_results = model.train_model()
-
-    feature_importance = training_results["feature_importance"]
+    feature_importance = model.get_training_results()["feature_importance"]
 
     return jsonify({
         "success": True,
         "feature_importance": feature_importance
     })
 
-
 def get_model_metrics_prediction_data():
-
-    training_results = model.train_model()
-
-    prediction_data = training_results["prediction_data"]
+    prediction_data = model.get_training_results()["prediction_data"]
 
     return jsonify({
         "success": True,
@@ -108,9 +95,7 @@ def get_model_metrics_prediction_data():
     })
 
 def get_model_metrics_residuals():
-    training_results = model.train_model()
-
-    residuals = training_results["residuals"]
+    residuals = model.get_training_results()["residuals"]
 
     return jsonify({
         "success": True,

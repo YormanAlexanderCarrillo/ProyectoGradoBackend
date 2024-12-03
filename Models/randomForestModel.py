@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import random
 import math
+import pickle
+import os
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
@@ -11,21 +13,148 @@ from datetime import datetime, timedelta
 
 
 class GasLevelRandomForest:
-    def __init__(self):
+    def __init__(self, model_path='./trained_models/random_forest_model.pkl'):
         self.model = None
         self.scaler = None
         self.df = None
         self.X = None
         self.y = None
         self.last_known_values = None
+        self.model_path = model_path
+        self.training_results = None
+        self.feature_names = ['temperatura_sensor', 'humedad_ambiente',
+                              'tiempo_desde_calibracion', 'nivel_bateria']
+        self._load_trained_model()
+
+    def _load_trained_model(self):
+        if os.path.exists(self.model_path):
+            try:
+                with open(self.model_path, 'rb') as f:
+                    saved_data = pickle.load(f)
+                self.model = saved_data['model']
+                self.scaler = saved_data['scaler']
+                self.training_results = saved_data.get('training_results')
+                self.X = saved_data.get('X')
+                self.y = saved_data.get('y')
+                self.df = saved_data.get('df')
+                print("Modelo cargado exitosamente desde", self.model_path)
+                return True
+            except Exception as e:
+                print(f"Error al cargar el modelo: {str(e)}")
+                self.model = None
+                self.scaler = None
+                self.training_results = None
+                self.X = None
+                self.y = None
+                self.df = None
+        return False
+
+    def _save_trained_model(self):
+        if self.model is not None and self.scaler is not None:
+            try:
+                os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
+                with open(self.model_path, 'wb') as f:
+                    pickle.dump({
+                        'model': self.model,
+                        'scaler': self.scaler,
+                        'training_results': self.training_results,
+                        'X': self.X,
+                        'y': self.y,
+                        'df': self.df
+                    }, f)
+                print("Modelo guardado exitosamente en", self.model_path)
+                return True
+            except Exception as e:
+                print(f"Error al guardar el modelo: {str(e)}")
+        return False
 
     def load_data(self, csv_path):
-        self.df = pd.read_csv(csv_path)
-        self.df['datetime'] = pd.to_datetime(self.df['fecha'] + ' ' + self.df['hora'])
-        self.df['dias_desde_calibracion'] = self.df['tiempo_desde_calibracion'] / 24
-        self.update_last_known_values()
+        if self.df is None:
+            self.df = pd.read_csv(csv_path)
+            self.df['datetime'] = pd.to_datetime(self.df['fecha'] + ' ' + self.df['hora'])
+            self.df['dias_desde_calibracion'] = self.df['tiempo_desde_calibracion'] / 24
+            self.X = self.df[self.feature_names]
+            self.y = self.df['nivel_gas_metano']
+            self.update_last_known_values()
         return self.get_basic_stats()
 
+    def get_training_results(self):
+        if self.training_results is None:
+            if self.model is None:
+                raise ValueError("El modelo no está entrenado. Ejecute train_model() primero.")
+            self._calculate_training_results()
+        return self.training_results
+
+    def _calculate_training_results(self):
+        if self.model is None or self.scaler is None:
+            raise ValueError("El modelo no está entrenado.")
+
+        X_scaled = self.scaler.transform(self.X)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_scaled, self.y, test_size=0.2, random_state=42
+        )
+
+        y_pred = self.model.predict(X_test)
+
+        self.training_results = {
+            'metrics': {
+                'mse': mean_squared_error(y_test, y_pred),
+                'rmse': np.sqrt(mean_squared_error(y_test, y_pred)),
+                'mae': mean_absolute_error(y_test, y_pred),
+                'r2': r2_score(y_test, y_pred)
+            },
+            'prediction_data': {
+                'real_values': y_test.tolist(),
+                'predicted_values': y_pred.tolist()
+            },
+            'feature_importance': {
+                'variables': self.X.columns.tolist(),
+                'importances': self.model.feature_importances_.tolist()
+            },
+            'residuals': {
+                'values': (y_test - y_pred).tolist(),
+                'predictions': y_pred.tolist()
+            }
+        }
+
+    def train_model(self, force_retrain=False):
+        if self.model is not None and not force_retrain:
+            return self.get_training_results()
+
+        if self.X is None or self.y is None:
+            if self.df is None:
+                raise ValueError("No hay datos cargados. Llame a load_data() primero.")
+
+            self.X = self.df[self.feature_names]
+            self.y = self.df['nivel_gas_metano']
+
+        self.scaler = StandardScaler()
+        X_scaled = self.scaler.fit_transform(self.X)
+        X_scaled = pd.DataFrame(X_scaled, columns=self.X.columns)
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_scaled, self.y, test_size=0.2, random_state=42
+        )
+
+        self.model = RandomForestRegressor(
+            n_estimators=100,
+            max_depth=10,
+            min_samples_split=5,
+            min_samples_leaf=2,
+            random_state=42
+        )
+
+        self.model.fit(X_train, y_train)
+
+        # Calculate and save training results
+        self._calculate_training_results()
+
+        # Save the trained model
+        self._save_trained_model()
+
+        return self.training_results
+
+    # [Rest of the methods remain the same...]
     def get_basic_stats(self):
         return {
             "descriptive_stats": self.df.describe().replace({np.nan: None}).to_dict(),
@@ -64,81 +193,21 @@ class GasLevelRandomForest:
             "correlations": self.df[columns].corr().to_dict()
         }
 
-    def train_model(self):
-        self.X = self.df[['temperatura_sensor', 'humedad_ambiente',
-                          'tiempo_desde_calibracion', 'nivel_bateria']]
-        self.y = self.df['nivel_gas_metano']
-
-        self.scaler = StandardScaler()
-        X_scaled = self.scaler.fit_transform(self.X)
-        X_scaled = pd.DataFrame(X_scaled, columns=self.X.columns)
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_scaled, self.y, test_size=0.2, random_state=42
-        )
-
-        # Inicializar y entrenar Random Forest con hiperparámetros optimizados
-        self.model = RandomForestRegressor(
-            n_estimators=100,  # Número de árboles
-            max_depth=10,  # Profundidad máxima de los árboles
-            min_samples_split=5,
-            min_samples_leaf=2,
-            random_state=42
-        )
-        self.model.fit(X_train, y_train)
-
-        y_pred = self.model.predict(X_test)
-
-        metrics = {
-            'mse': mean_squared_error(y_test, y_pred),
-            'rmse': np.sqrt(mean_squared_error(y_test, y_pred)),
-            'mae': mean_absolute_error(y_test, y_pred),
-            'r2': r2_score(y_test, y_pred)
-        }
-
-        # Datos para gráfico de predicciones vs reales
-        prediction_data = {
-            'real_values': y_test.tolist(),
-            'predicted_values': y_pred.tolist()
-        }
-
-        # Importancia de variables usando feature_importances_ de Random Forest
-        feature_importance = {
-            'variables': self.X.columns.tolist(),
-            'importance_scores': self.model.feature_importances_.tolist()
-        }
-
-        # Residuos
-        residuals = {
-            'values': (y_test - y_pred).tolist(),
-            'predictions': y_pred.tolist()
-        }
-
-        return {
-            'metrics': metrics,
-            'prediction_data': prediction_data,
-            'feature_importance': feature_importance,
-            'residuals': residuals
-        }
-
     def predict(self, temperatura, humedad, tiempo_calibracion, nivel_bateria):
-        if self.model is None:
-            raise ValueError("Modelo no entrenado. Llame a train_model() primero.")
+        if self.model is None or self.scaler is None:
+            raise ValueError("Modelo no entrenado o cargado correctamente.")
 
         nuevos_datos = pd.DataFrame([[temperatura, humedad, tiempo_calibracion, nivel_bateria]],
-                                    columns=self.X.columns)
-        nuevos_datos_scaled = pd.DataFrame(
-            self.scaler.transform(nuevos_datos),
-            columns=self.X.columns
-        )
+                                    columns=self.feature_names)
+        nuevos_datos_scaled = self.scaler.transform(nuevos_datos)
 
-        # Obtener predicción y intervalos de confianza usando múltiples árboles
+        # Get predictions from all trees for confidence interval
         predictions = []
         for estimator in self.model.estimators_:
             predictions.append(estimator.predict(nuevos_datos_scaled)[0])
 
         mean_prediction = float(np.mean(predictions))
-        confidence_interval = float(np.std(predictions) * 1.96)  # 95% intervalo de confianza
+        confidence_interval = float(np.std(predictions) * 1.96)
 
         return {
             'prediction': mean_prediction,
@@ -152,7 +221,6 @@ class GasLevelRandomForest:
             latest_row = self.df.iloc[-1]
             current_time = datetime.now()
 
-            # Aplicar variaciones dentro de rangos realistas
             temp_current = latest_row['temperatura_sensor']
             temp_variation = max(0, min(49, temp_current + random.uniform(-2, 2)))
 
@@ -182,7 +250,6 @@ class GasLevelRandomForest:
         current_datetime = pd.to_datetime(self.last_known_values['datetime'])
         base_values = self.last_known_values.copy()
 
-        # Calcular tendencia histórica
         if self.df is not None and len(self.df) > 24:
             historical_trend = self.df['nivel_gas_metano'].diff().mean()
         else:
@@ -193,7 +260,6 @@ class GasLevelRandomForest:
             hour_of_day = future_datetime.hour
             is_night = 0 <= hour_of_day <= 6
 
-            # Simulaciones más realistas de variables
             temp_base = base_values['temperatura_sensor']
             temp_cycle = math.sin(hour_of_day * math.pi / 12) * 2
             temp_noise = random.uniform(-0.5, 0.5)
@@ -219,7 +285,6 @@ class GasLevelRandomForest:
             X_pred = pd.DataFrame([prediction_data], columns=self.X.columns)
             X_pred_scaled = self.scaler.transform(X_pred)
 
-            # Obtener predicción con intervalos de confianza
             pred_result = []
             for estimator in self.model.estimators_:
                 pred_result.append(estimator.predict(X_pred_scaled)[0])
@@ -227,11 +292,9 @@ class GasLevelRandomForest:
             mean_prediction = np.mean(pred_result)
             confidence_interval = np.std(pred_result) * 1.96
 
-            # Ajustes basados en factores temporales
             time_factor = 1 - (0.05 if is_night else 0)
             trend_adjustment = historical_trend * hour
 
-            # Predicción final con límites
             gas_level = (mean_prediction * time_factor + trend_adjustment)
             gas_level = max(0.01, min(3.73, gas_level))
 
