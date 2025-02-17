@@ -1,74 +1,39 @@
-from flask import Flask, request, jsonify
+# app.py
+from flask import Flask, send_from_directory
 from flask_cors import CORS
-import pandas as pd
-from Models.gasLevelModel import (predecir_metano, detectar_atipicos)
+from flask_swagger_ui import get_swaggerui_blueprint
+from routes.route_regresion_model import bp as regresion_bp
+from routes.route_randomForest_model import bp as random_forest_bp
+from routes.route_gradient_boosting_model import bp as gradient_boosting_bp
+
 
 app = Flask(__name__)
-CORS(app)
-df = pd.read_csv('./data/sensor_mina_data.csv')
+CORS(app, origins="*", supports_credentials=True)
 
-@app.route('/', methods=['POST'])  # Cambiado a POST para recibir datos en JSON
-def predict_gas_level():
-    data = request.get_json()
+# Configuración de Swagger
+SWAGGER_URL = '/api/doc'  # URL para accerder a la documentacion
+API_URL = '/static/swagger.json'  # Ruta de los endpoint documentados
 
-    # Extraer los valores del JSON
-    temperatura = data.get("temperatura")
-    humedad = data.get("humedad")
-    tiempo_calibracion = data.get("tiempo_calibracion")
-    nivel_bateria = data.get("nivel_bateria")
+# Crear blueprint de Swagger UI
+swagger_ui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={
+        'app_name': "API Regresión"
+    }
+)
 
-    # Realizar la predicción
-    ejemplo_pred = predecir_metano(temperatura, humedad, tiempo_calibracion, nivel_bateria)
+# Registrar blueprints
+app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 
+app.register_blueprint(regresion_bp, url_prefix='/regresion')
+app.register_blueprint(random_forest_bp, url_prefix="/random_forest")
+app.register_blueprint(gradient_boosting_bp, url_prefix="/gradient_boosting")
 
-    #datos atipicos
-    # columnas_analizar = ['temperatura_sensor', 'humedad_ambiente', 'nivel_gas_metano', 'nivel_bateria']
-    # atipicos = detectar_atipicos(df, columnas_analizar)
-    #
-
-    # Retornar la respuesta en formato JSON
-    return jsonify({
-        "temperatura": temperatura,
-        "humedad": humedad,
-        "tiempo_calibracion": tiempo_calibracion,
-        "nivel_bateria": nivel_bateria,
-        "prediccion_metano": round(ejemplo_pred, 2),
-        # "atipicos": atipicos
-    })
-
-@app.route('/test', methods=['GET'])  # Cambiado a POST para recibir datos en JSON
-def atipicos():
-
-
-    #datos atipicos
-    columnas_analizar = ['temperatura_sensor', 'humedad_ambiente', 'nivel_gas_metano', 'nivel_bateria']
-    atipicos = detectar_atipicos(df, columnas_analizar)
-
-    print(atipicos)
-
-    # Retornar la respuesta en formato JSON
-    return jsonify('hola')
-
-
-@app.route('/datos_graficos', methods=['GET'])
-def datos_graficos():
-    # Datos para las gráficas
-    print('entro metodo')
-    correlaciones = df[['temperatura_sensor', 'humedad_ambiente', 'tiempo_desde_calibracion',
-                        'nivel_gas_metano', 'nivel_bateria']].corr()
-
-    # degradacion_temporal = df.groupby('dias_desde_calibracion')['nivel_gas_metano'].std().reset_index().to_dict(
-    #     orient='records')
-    json_correlaciones = correlaciones.to_json(orient='records')
-
-    # Aquí incluyes más datos para las gráficas necesarias
-    return jsonify({
-        "correlaciones": json_correlaciones,
-        # Añadir otros datos de gráficas aquí...
-    })
-
-
-
+# Ruta para servir el archivo swagger.json
+@app.route('/static/swagger.json')
+def serve_swagger_spec():
+    return send_from_directory('config', 'swagger.json')
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
