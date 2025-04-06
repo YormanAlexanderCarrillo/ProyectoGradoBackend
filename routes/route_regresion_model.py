@@ -1,5 +1,7 @@
 from flask import Blueprint
-from controllers.controll_Regrion_Model import  get_analysis_basic_stats, get_analysis_outliers, get_analysis_temporal_analysis,get_analysis_correlations, predict_gas_level, get_model_metrics_metrics, get_model_metrics_feature_importance, get_model_metrics_residuals, get_model_metrics_prediction_data, predict_data_gas_future
+
+import controllers.controll_Regrion_Model
+from controllers.controll_Regrion_Model import  get_analysis_basic_stats, get_analysis_outliers, get_analysis_temporal_analysis,get_analysis_correlations, predict_gas_level, get_model_metrics_metrics, get_model_metrics_feature_importance, get_model_metrics_residuals, get_model_metrics_prediction_data, predict_data_gas_future, correct_data_outliers, get_analysis_battery_impact
 
 
 bp = Blueprint('regresion', __name__)
@@ -11,6 +13,10 @@ def basic_stats():
 @bp.route('/analysis/outliers', methods=['GET'])
 def outliers():
     return get_analysis_outliers()
+
+@bp.route('/analysis/correct-outliers', methods=['GET'])
+def correctOutliers():
+    return correct_data_outliers()
 
 @bp.route('/analysis/temporal_analysis', methods=['GET'])
 def temporal_analysis():
@@ -40,6 +46,18 @@ def residuals():
 def prediction_data():
     return get_model_metrics_prediction_data()
 
+
+# Nuevos metodos -----------------
+
+@bp.route('/impact/battery-impact', methods=['GET'])
+def impact_battery():
+    return get_analysis_battery_impact()
+
+@bp.route('/impact/temperature-impact', methods=['GET'])
+def impact_temperature():
+    return controllers.controll_Regrion_Model.get_analysis_temperature_impact();
+
+# -------------------------
 @bp.route('/predict/prediction_future', methods=['POST'])
 def prediction_gas_future():
     return predict_data_gas_future()
