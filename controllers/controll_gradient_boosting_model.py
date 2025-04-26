@@ -4,7 +4,8 @@ from Models.gradient_boosting_model import GasLevelGradientBoostingModel
 
 model = GasLevelGradientBoostingModel()
 # model.load_data('./data/sensor_mina_data.csv')
-model.load_data('./data/datos_sensor_procesados.csv')
+# model.load_data('./data/datos_sensor_procesados.csv')
+model.load_data('./data/datos_finales_version_2.csv')
 
 if model.model is None:
     model.train_model()
@@ -191,7 +192,6 @@ def get_model_metrics_metrics():
     return jsonify({
         "success": True,
         "metrics": metrics,
-        "message": "pedro"
     })
 
 #Ya esta en routes

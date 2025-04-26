@@ -5,6 +5,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from routes.route_regresion_model import bp as regresion_bp
 from routes.route_randomForest_model import bp as random_forest_bp
 from routes.route_gradient_boosting_model import bp as gradient_boosting_bp
+from routes.route_prophet_model import bp as prophet_bp
 
 
 app = Flask(__name__)
@@ -29,6 +30,8 @@ app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 app.register_blueprint(regresion_bp, url_prefix='/regresion')
 app.register_blueprint(random_forest_bp, url_prefix="/random_forest")
 app.register_blueprint(gradient_boosting_bp, url_prefix="/gradient_boosting")
+app.register_blueprint(prophet_bp, url_prefix="/prophet")
+
 
 # Ruta para servir el archivo swagger.json
 @app.route('/static/swagger.json')

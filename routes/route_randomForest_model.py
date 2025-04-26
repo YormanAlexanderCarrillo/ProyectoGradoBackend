@@ -51,7 +51,7 @@ def impute_values():
 @bp.route("/correct/outliers", methods=["GET"])
 def outliers_correct():
     return correct_outliers()
-@bp.route("/analysis/batery-impact", methods=["GET"])
+@bp.route("/analysis/battery-impact", methods=["GET"])
 def analysis_battery_impact():
     return get_analysis_battery_impact()
 

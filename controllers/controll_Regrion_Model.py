@@ -5,7 +5,8 @@ from Models.gasLevelModel import GasLevelModel
 model = GasLevelModel()
 # model.load_data('./data/sensor_mina_data_parts_per_million.csv')
 # model.load_data('./data/sensor_mina_data.csv')
-model.load_data('./data/datos_sensor_procesados.csv')
+# model.load_data('./data/datos_sensor_procesados.csv')
+model.load_data('./data/datos_finales_version_2.csv')
 
 
 model.train_model()

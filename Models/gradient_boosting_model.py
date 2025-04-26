@@ -925,7 +925,7 @@ class GasLevelGradientBoostingModel:
                 'humedad_ambiente': prediction_data['humedad_ambiente'],
                 'nivel_bateria': prediction_data['nivel_bateria'],
                 'tiempo_desde_calibracion': prediction_data['tiempo_desde_calibracion'],
-                'predicted_gas_level': round(gas_level, 3),
+                'predicted_gas_level': round(gas_level, 5),
                 'reliability': round(reliability_adjusted, 1)
             })
 

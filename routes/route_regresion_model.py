@@ -49,15 +49,15 @@ def prediction_data():
 
 # Nuevos metodos -----------------
 
-@bp.route('/impact/battery-impact', methods=['GET'])
+@bp.route('/analysis/battery-impact', methods=['GET'])
 def impact_battery():
     return get_analysis_battery_impact()
 
-@bp.route('/impact/temperature-impact', methods=['GET'])
+@bp.route('/analysis/temperature_impact', methods=['GET'])
 def impact_temperature():
     return controllers.controll_Regrion_Model.get_analysis_temperature_impact();
 
 # -------------------------
-@bp.route('/predict/prediction_future', methods=['POST'])
+@bp.route('/analysis/prediction_future', methods=['POST'])
 def prediction_gas_future():
     return predict_data_gas_future()
