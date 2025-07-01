@@ -6,6 +6,8 @@ model = GasLevelRandomForest()
 # model.load_data('./data/sensor_mina_data.csv')
 # model.load_data('./data/datos_sensor_procesados.csv')
 model.load_data('./data/datos_finales_version_2.csv')
+# model.load_data('./data/sensor_mina_data_parts_per_million_2.csv')
+
 
 if model.model is None:
     model.train_model()
@@ -309,11 +311,14 @@ def get_model_metrics_preprocessing():
         }), 400
 
 # Este metodo puede ser ser implementado a futuro
-def retrain_model():
+def retrain_model(data_csv):
     """
     Fuerza el reentrenamiento del modelo con los datos actuales.
     """
     try:
+
+        model.load_data(data_csv)
+
         training_results = model.train_model(force_retrain=True)
 
         return jsonify({

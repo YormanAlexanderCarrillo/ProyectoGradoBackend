@@ -14,6 +14,7 @@ from controllers.controll_prophet_model import (
     impute_missing_values,
     get_analysis_battery_impact,
     get_analysis_temperature_impact,
+    retrain_model,
     get_model_prophet_components  # Nuevo método específico de Prophet
 )
 
@@ -96,3 +97,7 @@ def analysis_temperature_impact():
 @bp.route("/model_metrics/prophet_components", methods=["GET"])
 def prophet_components():
     return get_model_prophet_components()
+
+@bp.route("/retrain", methods=["GET"])
+def retrain_model():
+    return retrain_model

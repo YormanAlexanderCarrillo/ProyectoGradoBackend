@@ -1,5 +1,6 @@
 from flask import jsonify, request
 from Models.prophet_model import GasLevelProphetModel
+from Models.gasLevelModel import GasLevelModel
 
 
 model = GasLevelProphetModel()
@@ -266,11 +267,14 @@ def get_model_prophet_components():
             "error": str(e)
         }), 400
 
-def retrain_model():
+def retrain_model(data_csv):
     """
     Fuerza el reentrenamiento del modelo con los datos actuales.
     """
     try:
+        # cargar datos enviados
+        model.load_data(data_csv)
+
         training_results = model.train_model(force_retrain=True)
 
         return jsonify({

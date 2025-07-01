@@ -253,6 +253,27 @@ def get_model_metrics_residuals():
         "residuals": residuals
     })
 
+def retrain_model(data_csv):
+    """
+    Fuerza el reentrenamiento del modelo con los datos actuales.
+    """
+    try:
+
+        model.load_data(data_csv)
+
+        training_results = model.train_model()
+
+        return jsonify({
+            "success": True,
+            "message": "Modelo reentrenado exitosamente",
+            "metrics": training_results["metrics"]
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 # model metrics fin
 
 

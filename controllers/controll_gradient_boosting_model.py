@@ -263,11 +263,14 @@ def get_model_metrics_preprocessing():
         }), 400
 
 #No esta en routes - Mas sin embargo este endpoint no se implementa por el momento
-def retrain_model():
+def retrain_model(data_csv):
     """
     Fuerza el reentrenamiento del modelo con los datos actuales.
     """
     try:
+
+        model.load_data(data_csv)
+
         training_results = model.train_model(force_retrain=True)
 
         return jsonify({

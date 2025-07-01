@@ -58,6 +58,6 @@ def impact_temperature():
     return controllers.controll_Regrion_Model.get_analysis_temperature_impact();
 
 # -------------------------
-@bp.route('/analysis/prediction_future', methods=['POST'])
+@bp.route('/predict/prediction_future', methods=['POST'])
 def prediction_gas_future():
     return predict_data_gas_future()
