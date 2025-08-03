@@ -5,7 +5,7 @@ from Models.gradient_boosting_model import GasLevelGradientBoostingModel
 model = GasLevelGradientBoostingModel()
 # model.load_data('./data/sensor_mina_data.csv')
 # model.load_data('./data/datos_sensor_procesados.csv')
-model.load_data('./data/datos_finales_version_2.csv')
+model.load_data('./data/complete_data_normal.csv')
 
 if model.model is None:
     model.train_model()

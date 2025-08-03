@@ -5,7 +5,7 @@ from Models.randomForestModel import GasLevelRandomForest
 model = GasLevelRandomForest()
 # model.load_data('./data/sensor_mina_data.csv')
 # model.load_data('./data/datos_sensor_procesados.csv')
-model.load_data('./data/datos_finales_version_2.csv')
+model.load_data('./data/complete_data_normal.csv')
 # model.load_data('./data/sensor_mina_data_parts_per_million_2.csv')
 
 
