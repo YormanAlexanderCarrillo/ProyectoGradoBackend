@@ -24,4 +24,4 @@ flask run --host=0.0.0.0 --port=5000
 
 ## Autores
 
-- Autores -Jose Daniel Rivas Soraca- Cristian David Cordoba Tibocha - Yorman Alexander Carrillo Matinez 
+- Autores - Cristian David Cordoba Tibocha - Yorman Alexander Carrillo Matinez 
