@@ -1,5 +1,5 @@
 from flask import Blueprint
-from controllers.controll_randomForest_model import get_analysis_basic_stats,get_analysis_outliers,get_analysis_temporal_analysis,get_analysis_correlations,predict_gas_level,get_model_metrics_metrics,get_model_metrics_feature_importance,get_model_metrics_residuals,get_model_metrics_prediction_data, predict_data_gas_future
+from controllers.controll_randomForest_model import get_analysis_basic_stats,get_analysis_outliers,get_analysis_temporal_analysis,get_analysis_correlations,predict_gas_level,get_model_metrics_metrics,get_model_metrics_feature_importance,get_model_metrics_residuals,get_model_metrics_prediction_data, predict_data_gas_future, impute_missing_values, correct_outliers, get_analysis_battery_impact, get_analysis_temperature_impact
 
 bp = Blueprint("random_forest", __name__)
 
@@ -43,3 +43,19 @@ def prediction_data():
 @bp.route("/predict/prediction_future", methods=["POST"])
 def prediction_data_gas_future():
     return predict_data_gas_future()
+
+## Nuevos metodos
+@bp.route("/correct/impute-missing-values", methods=["GET"])
+def impute_values():
+    return impute_missing_values()
+@bp.route("/correct/outliers", methods=["GET"])
+def outliers_correct():
+    return correct_outliers()
+@bp.route("/analysis/battery-impact", methods=["GET"])
+def analysis_battery_impact():
+    return get_analysis_battery_impact()
+
+@bp.route("/analysis/temperature_impact", methods=["GET"])
+def analysis_temperature_impact():
+    return get_analysis_temperature_impact()
+

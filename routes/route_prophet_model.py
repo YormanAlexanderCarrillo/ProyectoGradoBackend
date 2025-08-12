@@ -1,0 +1,103 @@
+from flask import Blueprint
+from controllers.controll_prophet_model import (
+    get_analysis_basic_stats,
+    get_analysis_outliers,
+    get_analysis_temporal_analysis,
+    get_analysis_correlations,
+    predict_gas_level,
+    get_model_metrics_metrics,
+    get_model_metrics_feature_importance,
+    get_model_metrics_residuals,
+    get_model_metrics_prediction_data,
+    predict_data_gas_future,
+    correct_outliers,
+    impute_missing_values,
+    get_analysis_battery_impact,
+    get_analysis_temperature_impact,
+    retrain_model,
+    get_model_prophet_components  # Nuevo método específico de Prophet
+)
+
+bp = Blueprint("prophet", __name__)
+
+
+@bp.route('/analysis/basic_stats', methods=['GET'])
+def basic_stats():
+    return get_analysis_basic_stats()
+
+
+@bp.route('/analysis/outliers', methods=['GET'])
+def outliers():
+    return get_analysis_outliers()
+
+
+@bp.route('/analysis/temporal_analysis', methods=['GET'])
+def temporal_analysis():
+    return get_analysis_temporal_analysis()
+
+
+@bp.route('/analysis/correlations', methods=['GET'])
+def correlations():
+    return get_analysis_correlations()
+
+
+@bp.route('/predict', methods=['POST'])
+def predict_gas():
+    return predict_gas_level()
+
+
+@bp.route('/model_metrics/metrics', methods=['GET'])
+def model_metrics():
+    return get_model_metrics_metrics()
+
+
+@bp.route('/model_metrics/feature_importance', methods=['GET'])
+def feature_importance():
+    return get_model_metrics_feature_importance()
+
+
+@bp.route('/model_metrics/residuals', methods=['GET'])
+def residuals():
+    return get_model_metrics_residuals()
+
+
+@bp.route("/model_metrics/prediction_data", methods=["GET"])
+def prediction_data():
+    return get_model_metrics_prediction_data()
+
+
+@bp.route("/predict/prediction_future", methods=["POST"])
+def prediction_data_gas_future():
+    return predict_data_gas_future()
+
+
+##nuevos metodos
+
+@bp.route("/correct/outliers", methods=["POST"])  # Cambiado a POST para recibir parámetros
+def outliers_correct():
+    return correct_outliers()
+
+
+@bp.route("/correct/impute-missing-values", methods=["POST"])  # Cambiado a POST para recibir parámetros
+def impute_values():
+    return impute_missing_values()
+
+
+@bp.route("/analysis/battery-impact", methods=["GET"])  # Corregido "batery" a "battery"
+def analysis_battery_impact():
+    return get_analysis_battery_impact()
+
+
+@bp.route("/analysis/temperature_impact", methods=["GET"])
+def analysis_temperature_impact():
+    return get_analysis_temperature_impact()
+
+
+# Ruta específica de Prophet para componentes del modelo
+@bp.route("/model_metrics/prophet_components", methods=["GET"])
+def prophet_components():
+    return get_model_prophet_components()
+
+@bp.route("/retrain", methods=["GET"])
+def retrain_model():
+    return retrain_model
