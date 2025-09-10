@@ -1,4 +1,3 @@
-# app.py
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -7,7 +6,7 @@ from routes.route_randomForest_model import bp as random_forest_bp
 from routes.route_gradient_boosting_model import bp as gradient_boosting_bp
 from routes.route_prophet_model import bp as prophet_bp
 from routes.route_settings import bp as setting_bp
-
+from routes.route_comparative_models import bp as comparative_models_bp
 
 app = Flask(__name__)
 CORS(app, origins="*", supports_credentials=True)
@@ -33,6 +32,7 @@ app.register_blueprint(random_forest_bp, url_prefix="/random_forest")
 app.register_blueprint(gradient_boosting_bp, url_prefix="/gradient_boosting")
 app.register_blueprint(prophet_bp, url_prefix="/prophet")
 app.register_blueprint(setting_bp, url_prefix="/setting")
+app.register_blueprint(comparative_models_bp, url_prefix="/comparative_models")
 
 
 # Ruta para servir el archivo swagger.json
