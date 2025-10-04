@@ -683,17 +683,17 @@ class GasLevelProphetModel:
         outliers_info = self.detect_outliers(columns_to_process)
 
         # Imputar valores faltantes
-        imputations_info = self.impute_missing_values(
-            columns=columns_to_process,
-            method='median'  # La mediana suele ser robusta para datos asimétricos
-        )
+        # imputations_info = self.impute_missing_values(
+        #     columns=columns_to_process,
+        #     method='median'  # La mediana suele ser robusta para datos asimétricos
+        # )
 
         # Corregir datos atípicos
-        corrections_info = self.correct_outliers(
-            columns=columns_to_process,
-            threshold=3,
-            method='median'  # La mediana es generalmente más robusta para outliers
-        )
+        # corrections_info = self.correct_outliers(
+        #     columns=columns_to_process,
+        #     threshold=3,
+        #     method='median'  # La mediana es generalmente más robusta para outliers
+        # )
 
         # Definir variables predictoras (X) y variable objetivo (y)
         self.X = self.df[self.feature_names]
