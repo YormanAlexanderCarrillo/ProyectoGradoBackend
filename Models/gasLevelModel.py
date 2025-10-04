@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import random
 import math
+import pickle
+import os
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
@@ -17,9 +19,9 @@ class GasLevelModel:
     humedad, tiempo de calibración y nivel de batería.
     """
 
-    def __init__(self):
+    def __init__(self, model_path='./trained_models/regression_linear_model.pkl'):
         """
-        Inicializa el modelo con valores por defecto.
+        Inicializa el modelo con valores por defecto y carga modelo existente si está disponible.
         """
         self.model = None  # Modelo de regresión lineal
         self.scaler = None  # Escalador para normalización de datos
@@ -27,7 +29,142 @@ class GasLevelModel:
         self.X = None  # Variables predictoras
         self.y = None  # Variable objetivo (nivel_gas_metano)
         self.last_known_values = None  # Últimos valores conocidos para predicciones
+        self.model_path = model_path  # Ruta para guardar/cargar el modelo
+        self.training_results = None  # Almacena los resultados del entrenamiento
+        self.feature_names = ['temperatura_sensor', 'humedad_ambiente',
+                              'tiempo_desde_calibracion', 'nivel_bateria']
         self.correction_history = {}  # Historial de correcciones aplicadas
+
+        # Intentar cargar modelo existente al inicializar
+        self._load_trained_model()
+
+    def _load_trained_model(self):
+        """
+        Carga un modelo previamente entrenado desde el archivo.
+
+        Returns:
+            bool: True si el modelo se cargó correctamente, False en caso contrario.
+        """
+        if os.path.exists(self.model_path):
+            try:
+                with open(self.model_path, 'rb') as f:
+                    saved_data = pickle.load(f)
+                self.model = saved_data['model']
+                self.scaler = saved_data['scaler']
+                self.training_results = saved_data.get('training_results')
+                self.X = saved_data.get('X')
+                self.y = saved_data.get('y')
+                self.df = saved_data.get('df')
+                print("Modelo de regresión lineal cargado exitosamente desde", self.model_path)
+                return True
+            except Exception as e:
+                print(f"Error al cargar el modelo: {str(e)}")
+                self.model = None
+                self.scaler = None
+                self.training_results = None
+                self.X = None
+                self.y = None
+                self.df = None
+        return False
+
+    def _save_trained_model(self):
+        """
+        Guarda el modelo entrenado con el scaler y los resultados obtenidos del entrenamiento.
+
+        Returns:
+            bool: True si el modelo se guardó correctamente, False en caso contrario.
+        """
+        if self.model is not None and self.scaler is not None:
+            try:
+                os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
+                with open(self.model_path, 'wb') as f:
+                    pickle.dump({
+                        'model': self.model,
+                        'scaler': self.scaler,
+                        'training_results': self.training_results,
+                        'X': self.X,
+                        'y': self.y,
+                        'df': self.df
+                    }, f)
+                print("Modelo de regresión lineal guardado exitosamente en", self.model_path)
+                return True
+            except Exception as e:
+                print(f"Error al guardar el modelo: {str(e)}")
+        return False
+
+    def get_training_results(self):
+        """
+        Retorna los resultados del entrenamiento sin reentrenar.
+
+        Returns:
+            dict: Resultados del entrenamiento
+        """
+        if self.training_results is None:
+            if self.model is None:
+                raise ValueError("El modelo no está entrenado. Ejecute train_model() primero.")
+            # Si no hay resultados guardados pero el modelo existe, los recalculamos una vez
+            self._calculate_training_results()
+        return self.training_results
+
+    def _calculate_training_results(self):
+        """
+        Calcula las métricas de rendimiento del modelo entrenado.
+        """
+        if self.model is None or self.scaler is None:
+            raise ValueError("El modelo no está entrenado.")
+
+        # Normalizar variables predictoras
+        X_scaled = self.scaler.transform(self.X)
+        X_scaled = pd.DataFrame(X_scaled, columns=self.X.columns)
+
+        # Dividir datos en conjuntos de entrenamiento y prueba
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_scaled, self.y, test_size=0.2, random_state=42
+        )
+
+        # Realizar predicciones en conjunto de prueba
+        y_pred = self.model.predict(X_test)
+
+        # Conversión de métricas
+        metric_y_test = self.ppm_to_percentage(y_test)
+        metric_y_pred = self.ppm_to_percentage(y_pred)
+
+        # Conversión de coeficientes
+        feature_importance_coefficients = self.model.coef_.tolist()
+
+        # Conversión de residuales
+        residuals_values = (y_test - y_pred).tolist()
+        residuals_predictions = y_pred.tolist()
+
+        # Análisis de normalidad de residuos
+        _, p_value = stats.shapiro(y_test - y_pred)
+
+        self.training_results = {
+            'metrics': {
+                'mse': float(mean_squared_error(metric_y_test, metric_y_pred)),
+                'rmse': float(np.sqrt(mean_squared_error(metric_y_test, metric_y_pred))),
+                'mae': float(mean_absolute_error(metric_y_test, metric_y_pred)),
+                'r2': float(r2_score(metric_y_test, metric_y_pred))
+            },
+            'prediction_data': {
+                'real_values': self.ppm_to_percentage(y_test.tolist()),
+                'predicted_values': self.ppm_to_percentage(y_pred.tolist())
+            },
+            'feature_importance': {
+                'variables': self.X.columns.tolist(),
+                'coefficients': self.ppm_to_percentage(feature_importance_coefficients)
+            },
+            'residuals': {
+                'values': self.ppm_to_percentage(residuals_values),
+                'predictions': self.ppm_to_percentage(residuals_predictions)
+            },
+            'residual_normality': {
+                'shapiro_p_value': float(p_value),
+                'is_normal': p_value > 0.05,
+                'interpretation': "Los residuos siguen una distribución normal" if p_value > 0.05 else
+                "Los residuos no siguen una distribución normal"
+            }
+        }
 
     def load_data(self, csv_path):
         """
@@ -45,6 +182,10 @@ class GasLevelModel:
         # Procesamiento de campos temporales
         self.df['datetime'] = pd.to_datetime(self.df['fecha'] + ' ' + self.df['hora'])
         self.df['dias_desde_calibracion'] = self.df['tiempo_desde_calibracion'] / 24
+
+        # Definir variables predictoras (X) y variable objetivo (y)
+        self.X = self.df[self.feature_names]
+        self.y = self.df['nivel_gas_metano']
 
         # Verificación de datos faltantes
         missing_data = self.df.isnull().sum()
@@ -458,44 +599,49 @@ class GasLevelModel:
         else:
             return f"Correlación {strength} {direction} ({correlation_value:.3f})"
 
-    def train_model(self):
+    def train_model(self, force_retrain=False):
         """
-        Entrena el modelo de regresión lineal para predecir niveles de gas.
+        Entrena el modelo de regresión lineal para predecir niveles de gas, con
+        validación de modelo existente y opción de forzar reentrenamiento.
+
+        Args:
+            force_retrain (bool): Si es True, fuerza el reentrenamiento incluso si ya existe
 
         Returns:
             dict: Métricas de evaluación y datos de predicción
         """
+        # Validar si ya existe un modelo entrenado
+        if self.model is not None and not force_retrain:
+            return self.get_training_results()
 
-        columns_to_process  = [
+        if self.df is None:
+            return {"error": "No data loaded. Call load_data() first."}
+
+        columns_to_process = [
             'temperatura_sensor',
             'humedad_ambiente',
             'nivel_gas_metano',
             'nivel_bateria'
         ]
 
+        # Detectar outliers
         outliers_info = self.detect_outliers(columns_to_process)
 
-        #corregir valores faltantes
-
+        # Imputar valores faltantes
         imputations_info = self.impute_missing_values(
             columns=columns_to_process,
             method='median'  # La mediana suele ser robusta para datos asimétricos
         )
 
-
-        #corregir datos atipicos
+        # Corregir datos atípicos
         corrections_info = self.correct_outliers(
-            columns=columns_to_process ,
+            columns=columns_to_process,
             threshold=3,
             method='median'  # La mediana es generalmente más robusta para outliers
         )
 
-        if self.df is None:
-            return {"error": "No data loaded. Call load_data() first."}
-
         # Definir variables predictoras (X) y variable objetivo (y)
-        self.X = self.df[['temperatura_sensor', 'humedad_ambiente',
-                          'tiempo_desde_calibracion', 'nivel_bateria']]
+        self.X = self.df[self.feature_names]
         self.y = self.df['nivel_gas_metano']
 
         # Normalizar variables predictoras
@@ -512,73 +658,24 @@ class GasLevelModel:
         self.model = LinearRegression()
         self.model.fit(X_train, y_train)
 
-        # Realizar predicciones en conjunto de prueba
-        y_pred = self.model.predict(X_test)
+        # Calcular y guardar resultados del entrenamiento
+        self._calculate_training_results()
 
-        metric_y_test = self.ppm_to_percentage(y_test)
-        metric_y_pred = self.ppm_to_percentage(y_pred)
+        # Guardar el modelo entrenado
+        self._save_trained_model()
 
-
-        # Calcular métricas de evaluación
-        metrics = {
-            'mse': float(mean_squared_error(metric_y_test, metric_y_pred)),
-            'rmse': float(np.sqrt(mean_squared_error(metric_y_test, metric_y_pred))),
-            'mae': float(mean_absolute_error(metric_y_test, metric_y_pred)),
-            'r2': float(r2_score(metric_y_test, metric_y_pred))
+        # Añadir información de preprocesamiento a los resultados
+        self.training_results['preprocessing'] = {
+            'outliers': outliers_info,
+            'imputations': imputations_info,
+            'corrections': corrections_info
         }
 
-        prediction_percentage = y_test.tolist()
-
-        # Preparar datos para visualización
-        prediction_data = {
-            'real_values': self.ppm_to_percentage(y_test.tolist()),
-            'predicted_values': self.ppm_to_percentage(y_pred.tolist())
-        }
-
-        # print("pedro que gusto de verte",self.model.coef_.tolist())
-
-        feature_importance_coefficients = self.model.coef_.tolist()
-
-        # Calcular importancia de variables
-        feature_importance = {
-            'variables': self.X.columns.tolist(),
-            'coefficients': self.ppm_to_percentage(feature_importance_coefficients)
-        }
-
-        residuals_values = (y_test - y_pred).tolist()
-        residuals_predictions = y_pred.tolist()
-
-        # Calcular residuos
-        residuals = {
-            'values': self.ppm_to_percentage(residuals_values),
-            'predictions': self.ppm_to_percentage(residuals_predictions)
-        }
-
-        # Análisis de normalidad de residuos
-        _, p_value = stats.shapiro(y_test - y_pred)
-        residual_normality = {
-            'shapiro_p_value': float(p_value),
-            'is_normal': p_value > 0.05,
-            'interpretation': "Los residuos siguen una distribución normal" if p_value > 0.05 else
-            "Los residuos no siguen una distribución normal"
-        }
-
-        return {
-            'metrics': metrics,
-            'prediction_data': prediction_data,
-            'feature_importance': feature_importance,
-            'residuals': residuals,
-            'residual_normality': residual_normality,
-            'preprocessing': {
-                'outliers': outliers_info,
-                'imputations': imputations_info,
-                'corrections': corrections_info
-            }
-        }
+        return self.training_results
 
     def predict(self, temperatura, humedad, tiempo_calibracion, nivel_bateria):
         """
-        Realiza una predicción puntual del nivel de gas.
+        Realiza una predicción puntual del nivel de gas con análisis de confiabilidad.
 
         Args:
             temperatura (float): Temperatura del sensor
@@ -587,10 +684,10 @@ class GasLevelModel:
             nivel_bateria (float): Nivel de batería (%)
 
         Returns:
-            float: Nivel de gas metano predicho
+            dict: Predicción de nivel de gas y análisis de confiabilidad
         """
         if self.model is None:
-            raise ValueError("Modelo no entrenado. Llame a train_model() primero.")
+            raise ValueError("Modelo no entrenado o cargado correctamente.")
 
         # Preparar datos para predicción
         nuevos_datos = pd.DataFrame(
@@ -736,7 +833,7 @@ class GasLevelModel:
             dict: Predicciones horarias y metadatos
         """
         if self.model is None:
-            raise ValueError("Modelo no entrenado. Llame a train_model() primero.")
+            raise ValueError("Modelo no entrenado o cargado correctamente.")
 
         # Usar parámetros proporcionados o valores del último registro
         if all(param is not None for param in [temperatura, humedad, tiempo_calibracion, nivel_bateria]):
@@ -831,7 +928,6 @@ class GasLevelModel:
                 'humedad_ambiente': prediction_data['humedad_ambiente'],
                 'nivel_bateria': prediction_data['nivel_bateria'],
                 'tiempo_desde_calibracion': prediction_data['tiempo_desde_calibracion'],
-                # 'predicted_gas_level': round(gas_level, 3),
                 'predicted_gas_level': round(gas_level, 5),
                 'reliability': round(reliability_adjusted, 1)
             })
@@ -851,7 +947,7 @@ class GasLevelModel:
             }
         }
 
-    # Metodo para hacer la conversión de partes por millon a porcentaje
+    # Método para hacer la conversión de partes por millón a porcentaje
     def ppm_to_percentage(self, ppm_value):
         """
         Convierte valores de partes por millón (ppm) a porcentaje.
@@ -887,3 +983,279 @@ class GasLevelModel:
             return (percentage_value * 10000.0).tolist()
         else:
             return percentage_value * 10000.0
+
+    ## Predicción de errores de calibración
+    def predict_calibration_error(self, temperatura, humedad, tiempo_calibracion, nivel_bateria):
+        """
+        Predice el error de calibración/deriva del sensor basado en condiciones operacionales.
+
+        Args:
+            temperatura (float): Temperatura del sensor (°C)
+            humedad (float): Humedad ambiente (%)
+            tiempo_calibracion (float): Tiempo desde la última calibración (horas)
+            nivel_bateria (float): Nivel de batería (%)
+
+        Returns:
+            dict: Predicción del error de calibración y análisis
+        """
+        if self.model is None:
+            raise ValueError("Modelo no entrenado o cargado correctamente.")
+
+        # Factores de deriva individual
+        deriva_temporal = self._calculate_temporal_drift(tiempo_calibracion)
+        deriva_temperatura = self._calculate_temperature_drift(temperatura)
+        deriva_humedad = self._calculate_humidity_drift(humedad)
+        deriva_bateria = self._calculate_battery_drift(nivel_bateria)
+
+        # Error total de lectura
+        error_calibracion = deriva_temporal + deriva_temperatura + deriva_humedad + deriva_bateria
+
+        # Obtener predicción base
+        prediction_result = self.predict(temperatura, humedad, tiempo_calibracion, nivel_bateria)
+        nivel_esperado = prediction_result['predicted_gas_level']
+
+        # Conversión a porcentaje
+        error_porcentaje = (error_calibracion / 100.0) * 100
+
+        # Evaluación de severidad
+        severidad = self._assess_error_severity(abs(error_calibracion))
+
+        return {
+            'error_calibracion_absoluto': round(error_calibracion, 3),
+            'error_calibracion_porcentaje': round(error_porcentaje, 2),
+            'nivel_gas_esperado': nivel_esperado,
+            'nivel_gas_con_error': round(nivel_esperado + error_porcentaje, 2),
+            'factores_contribuyentes': {
+                'deriva_temporal': round(deriva_temporal, 3),
+                'deriva_temperatura': round(deriva_temperatura, 3),
+                'deriva_humedad': round(deriva_humedad, 3),
+                'deriva_bateria': round(deriva_bateria, 3)
+            },
+            'severidad_error': severidad,
+            'recomendacion_calibracion': self._get_calibration_recommendation(error_calibracion, tiempo_calibracion),
+            'modelo_tipo': 'Regresión Lineal'
+        }
+
+    def predict_reading_uncertainty(self, temperatura, humedad, tiempo_calibracion, nivel_bateria):
+        """
+        Predice la incertidumbre/confiabilidad de la lectura actual del sensor.
+
+        Args:
+            temperatura (float): Temperatura del sensor (°C)
+            humedad (float): Humedad ambiente (%)
+            tiempo_calibracion (float): Tiempo desde la última calibración (horas)
+            nivel_bateria (float): Nivel de batería (%)
+
+        Returns:
+            dict: Análisis de incertidumbre y confiabilidad
+        """
+        if self.model is None:
+            raise ValueError("Modelo no entrenado o cargado correctamente.")
+
+        # Obtener predicción base
+        prediction_result = self.predict(temperatura, humedad, tiempo_calibracion, nivel_bateria)
+
+        # Calcular incertidumbres
+        incertidumbre_calibracion = self._calculate_calibration_uncertainty(tiempo_calibracion)
+        incertidumbre_ambiental = self._calculate_environmental_uncertainty(temperatura, humedad)
+        incertidumbre_hardware = self._calculate_hardware_uncertainty(nivel_bateria)
+
+        # Incertidumbre total
+        incertidumbre_total = np.sqrt(
+            incertidumbre_calibracion ** 2 +
+            incertidumbre_ambiental ** 2 +
+            incertidumbre_hardware ** 2
+        )
+
+        # Nivel de confianza
+        confianza_porcentaje = max(0, 100 - (incertidumbre_total * 10))
+
+        # Rango de lectura
+        nivel_predicho = prediction_result['predicted_gas_level']
+        rango_inferior = max(0, nivel_predicho - incertidumbre_total)
+        rango_superior = min(100, nivel_predicho + incertidumbre_total)
+
+        # Clasificación
+        clasificacion_confianza = self._classify_confidence(confianza_porcentaje)
+
+        return {
+            'incertidumbre_total': round(incertidumbre_total, 2),
+            'confianza_porcentaje': round(confianza_porcentaje, 1),
+            'clasificacion_confianza': clasificacion_confianza,
+            'rango_lectura': {
+                'valor_central': nivel_predicho,
+                'limite_inferior': round(rango_inferior, 2),
+                'limite_superior': round(rango_superior, 2),
+                'amplitud_rango': round(rango_superior - rango_inferior, 2)
+            },
+            'fuentes_incertidumbre': {
+                'calibracion': round(incertidumbre_calibracion, 3),
+                'ambiental': round(incertidumbre_ambiental, 3),
+                'hardware': round(incertidumbre_hardware, 3)
+            },
+            'recomendaciones': self._get_uncertainty_recommendations(incertidumbre_total, confianza_porcentaje),
+            'modelo_tipo': 'Regresión Lineal'
+        }
+
+    # Métodos auxiliares de cálculo
+    def _calculate_temporal_drift(self, tiempo_calibracion):
+        """Calcula deriva temporal del sensor."""
+        dias_desde_calibracion = tiempo_calibracion / 24.0
+        deriva_base = 0.1 * dias_desde_calibracion
+
+        if dias_desde_calibracion > 7:
+            deriva_acelerada = (dias_desde_calibracion - 7) * 0.05
+            deriva_base += deriva_acelerada
+
+        return deriva_base
+
+    def _calculate_temperature_drift(self, temperatura):
+        """Calcula deriva por temperatura."""
+        temperatura_optima = 22.5
+        desviacion_temp = abs(temperatura - temperatura_optima)
+        deriva_temp = desviacion_temp * 0.02
+        return deriva_temp
+
+    def _calculate_humidity_drift(self, humedad):
+        """Calcula deriva por humedad."""
+        if 45 <= humedad <= 75:
+            deriva_hum = 0.0
+        else:
+            if humedad < 45:
+                deriva_hum = (45 - humedad) * 0.01
+            else:
+                deriva_hum = (humedad - 75) * 0.015
+        return deriva_hum
+
+    def _calculate_battery_drift(self, nivel_bateria):
+        """Calcula deriva por nivel de batería."""
+        if nivel_bateria >= 50:
+            deriva_bat = 0.0
+        elif nivel_bateria >= 30:
+            deriva_bat = (50 - nivel_bateria) * 0.02
+        else:
+            deriva_bat = 0.4 + (30 - nivel_bateria) * 0.05
+        return deriva_bat
+
+    def _calculate_calibration_uncertainty(self, tiempo_calibracion):
+        """Calcula incertidumbre por calibración."""
+        days = tiempo_calibracion / 24.0
+        uncertainty = 0.5 + (days * 0.1)
+        return min(uncertainty, 5.0)
+
+    def _calculate_environmental_uncertainty(self, temperatura, humedad):
+        """Calcula incertidumbre ambiental."""
+        temp_uncertainty = abs(temperatura - 22.5) * 0.05
+        hum_uncertainty = max(0, abs(humedad - 60) - 15) * 0.02
+        return temp_uncertainty + hum_uncertainty
+
+    def _calculate_hardware_uncertainty(self, nivel_bateria):
+        """Calcula incertidumbre del hardware."""
+        if nivel_bateria >= 50:
+            return 0.2
+        elif nivel_bateria >= 30:
+            return 0.5 + (50 - nivel_bateria) * 0.05
+        else:
+            return 1.5 + (30 - nivel_bateria) * 0.1
+
+    def _assess_error_severity(self, error_abs):
+        """Evalúa severidad del error."""
+        if error_abs < 0.5:
+            return {'nivel': 'Bajo', 'color': 'verde', 'accion': 'Monitoreo rutinario'}
+        elif error_abs < 1.0:
+            return {'nivel': 'Moderado', 'color': 'amarillo', 'accion': 'Aumentar frecuencia de verificación'}
+        elif error_abs < 2.0:
+            return {'nivel': 'Alto', 'color': 'naranja', 'accion': 'Programar calibración pronto'}
+        else:
+            return {'nivel': 'Crítico', 'color': 'rojo', 'accion': 'Calibración inmediata requerida'}
+
+    def _classify_confidence(self, confianza_porcentaje):
+        """Clasifica el nivel de confianza."""
+        if confianza_porcentaje >= 90:
+            return {'nivel': 'Muy Alta', 'descripcion': 'Lectura altamente confiable'}
+        elif confianza_porcentaje >= 75:
+            return {'nivel': 'Alta', 'descripcion': 'Lectura confiable'}
+        elif confianza_porcentaje >= 60:
+            return {'nivel': 'Media', 'descripcion': 'Lectura moderadamente confiable'}
+        elif confianza_porcentaje >= 40:
+            return {'nivel': 'Baja', 'descripcion': 'Lectura poco confiable'}
+        else:
+            return {'nivel': 'Muy Baja', 'descripcion': 'Lectura no confiable'}
+
+    def _get_calibration_recommendation(self, error_calibracion, tiempo_calibracion):
+        """Genera recomendación de calibración."""
+        error_abs = abs(error_calibracion)
+        days_since_cal = tiempo_calibracion / 24.0
+
+        if error_abs > 2.0:
+            return "Calibración inmediata requerida - Error crítico detectado"
+        elif error_abs > 1.0 or days_since_cal > 14:
+            return "Programar calibración en las próximas 24-48 horas"
+        elif error_abs > 0.5 or days_since_cal > 7:
+            return "Considerar calibración en la próxima semana"
+        else:
+            return "Sensor dentro de especificaciones - Continuar monitoreo rutinario"
+
+    def _get_uncertainty_recommendations(self, incertidumbre_total, confianza_porcentaje):
+        """Genera recomendaciones basadas en incertidumbre."""
+        recommendations = []
+
+        if incertidumbre_total > 3.0:
+            recommendations.append("Incertidumbre alta - Verificar condiciones ambientales")
+
+        if confianza_porcentaje < 60:
+            recommendations.append("Confianza baja - Tomar múltiples lecturas para confirmar")
+
+        if confianza_porcentaje < 40:
+            recommendations.append("Confianza muy baja - Suspender operaciones críticas hasta calibración")
+
+        if not recommendations:
+            recommendations.append("Sensor operando dentro de parámetros aceptables")
+
+        return recommendations
+
+    def get_battery_gas_data(self):
+        """
+        Retorna los datos reales de nivel de batería y nivel de gas metano del dataset.
+
+        Returns:
+            dict: Datos de batería y gas con estructura simple
+        """
+        try:
+            if self.df is None:  # Cambiar 'data' por 'df' que es como se llama en tu modelo
+                raise ValueError("No hay datos cargados")
+
+            # Filtrar solo las columnas necesarias y eliminar valores NaN
+            battery_gas_data = self.df[['nivel_bateria', 'nivel_gas_metano']].dropna()
+
+            if len(battery_gas_data) == 0:
+                raise ValueError("No hay datos válidos de batería y gas")
+
+            # Convertir a lista de diccionarios para fácil manejo en frontend
+            data_pairs = []
+            for index, row in battery_gas_data.iterrows():
+                data_pairs.append({
+                    'battery_level': float(row['nivel_bateria']),
+                    'gas_level': float(row['nivel_gas_metano']),
+                    'index': int(index)
+                })
+
+            return {
+                'data': data_pairs,
+                'total_records': len(data_pairs),
+                'battery_range': {
+                    'min': float(battery_gas_data['nivel_bateria'].min()),
+                    'max': float(battery_gas_data['nivel_bateria'].max())
+                },
+                'gas_range': {
+                    'min': float(battery_gas_data['nivel_gas_metano'].min()),
+                    'max': float(battery_gas_data['nivel_gas_metano'].max())
+                }
+            }
+
+        except Exception as e:
+            return {
+                'error': str(e),
+                'data': [],
+                'total_records': 0
+            }

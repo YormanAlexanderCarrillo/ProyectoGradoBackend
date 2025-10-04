@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import  jsonify, request
 from Models.gasLevelModel import GasLevelModel
 
@@ -277,6 +279,150 @@ def retrain_model(data_csv):
 
 # model metrics fin
 
+def predict_calibration_error():
+    """
+    Predice el error de calibración del sensor basado en condiciones operacionales.
+    """
+    try:
+        data = request.get_json()
+
+        # Validar datos de entrada
+        required_fields = ['temperatura', 'humedad', 'tiempo_calibracion', 'nivel_bateria']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    "success": False,
+                    "error": f"Campo requerido faltante: {field}"
+                }), 400
+
+        # Realizar predicción de error de calibración
+        error_result = model.predict_calibration_error(
+            temperatura=data.get("temperatura"),
+            humedad=data.get("humedad"),
+            tiempo_calibracion=data.get("tiempo_calibracion"),
+            nivel_bateria=data.get("nivel_bateria")
+        )
+
+        return jsonify({
+            "success": True,
+            "error_calibration_prediction": error_result
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
+def predict_reading_uncertainty():
+    """
+    Predice la incertidumbre y confiabilidad de la lectura actual.
+    """
+    try:
+        data = request.get_json()
+
+        # Validar datos de entrada
+        required_fields = ['temperatura', 'humedad', 'tiempo_calibracion', 'nivel_bateria']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    "success": False,
+                    "error": f"Campo requerido faltante: {field}"
+                }), 400
+
+        # Realizar predicción de incertidumbre
+        uncertainty_result = model.predict_reading_uncertainty(
+            temperatura=data.get("temperatura"),
+            humedad=data.get("humedad"),
+            tiempo_calibracion=data.get("tiempo_calibracion"),
+            nivel_bateria=data.get("nivel_bateria")
+        )
+
+        return jsonify({
+            "success": True,
+            "uncertainty_prediction": uncertainty_result
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+def get_error_analysis_summary():
+    """
+    Obtiene un resumen del análisis de errores y capacidades del modelo.
+    """
+    try:
+        summary = {
+            "modelo_tipo": "Regresión Lineal",
+            "capacidades_error": {
+                "prediccion_deriva_calibracion": True,
+                "analisis_incertidumbre": True,
+                "evaluacion_confiabilidad": True,
+                "recomendaciones_mantenimiento": True
+            },
+            "factores_evaluados": {
+                "deriva_temporal": "Degradación por tiempo desde calibración",
+                "deriva_temperatura": "Efecto de temperatura en precisión",
+                "deriva_humedad": "Efecto de humedad en mediciones",
+                "deriva_bateria": "Impacto del nivel de batería"
+            },
+            "rangos_recomendados": {
+                "temperatura_optima": "20-25°C",
+                "humedad_optima": "45-75%",
+                "tiempo_max_calibracion": "168 horas (7 días)",
+                "nivel_min_bateria": "50%"
+            },
+            "interpretacion_severidad": {
+                "bajo": "Error < 0.5% - Monitoreo rutinario",
+                "moderado": "Error 0.5-1.0% - Verificación frecuente",
+                "alto": "Error 1.0-2.0% - Calibración pronto",
+                "critico": "Error > 2.0% - Calibración inmediata"
+            }
+        }
+
+        return jsonify({
+            "success": True,
+            "error_analysis_summary": summary
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+def get_battery_gas_real_data():
+    """
+    Controlador para obtener los datos reales de batería y gas.
+    """
+    try:
+        # Usar la instancia del modelo ya creada
+        battery_gas_data = model.get_battery_gas_data()
+
+        if 'error' in battery_gas_data:
+            return jsonify({
+                "success": False,
+                "error": battery_gas_data['error'],
+                "data": []
+            }), 400
+
+        return jsonify({
+            "success": True,
+            "data": battery_gas_data['data'],
+            "total_records": battery_gas_data['total_records'],
+            "battery_range": battery_gas_data['battery_range'],
+            "gas_range": battery_gas_data['gas_range']
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "data": []
+        }), 500
 
