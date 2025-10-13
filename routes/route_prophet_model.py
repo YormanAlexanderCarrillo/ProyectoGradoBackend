@@ -15,7 +15,12 @@ from controllers.controll_prophet_model import (
     get_analysis_battery_impact,
     get_analysis_temperature_impact,
     retrain_model,
-    get_model_prophet_components  # Nuevo método específico de Prophet
+    get_model_prophet_components,
+    predict_calibration_error,
+    predict_reading_uncertainty,
+    get_error_analysis_summary
+
+    # Nuevo método específico de Prophet
 )
 
 bp = Blueprint("prophet", __name__)
@@ -101,3 +106,15 @@ def prophet_components():
 @bp.route("/retrain", methods=["GET"])
 def retrain_model():
     return retrain_model
+
+@bp.route('/predict/calibration_error', methods=['POST'])
+def predict_calibration_error_route():
+    return predict_calibration_error()
+
+@bp.route('/predict/reading_uncertainty', methods=['POST'])
+def predict_reading_uncertainty_route():
+    return predict_reading_uncertainty()
+
+@bp.route('/analysis/error_summary', methods=['GET'])
+def error_analysis_summary():
+    return get_error_analysis_summary()

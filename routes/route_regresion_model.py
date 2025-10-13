@@ -96,3 +96,4 @@ def error_analysis_summary():
 def battery_gas_data():
     return get_battery_gas_real_data()
 
+

@@ -1,5 +1,5 @@
 from flask import Blueprint
-from controllers.controll_randomForest_model import get_analysis_basic_stats,get_analysis_outliers,get_analysis_temporal_analysis,get_analysis_correlations,predict_gas_level,get_model_metrics_metrics,get_model_metrics_feature_importance,get_model_metrics_residuals,get_model_metrics_prediction_data, predict_data_gas_future, impute_missing_values, correct_outliers, get_analysis_battery_impact, get_analysis_temperature_impact
+from controllers.controll_randomForest_model import get_analysis_basic_stats,get_analysis_outliers,get_analysis_temporal_analysis,get_analysis_correlations,predict_gas_level,get_model_metrics_metrics,get_model_metrics_feature_importance,get_model_metrics_residuals,get_model_metrics_prediction_data, predict_data_gas_future, impute_missing_values, correct_outliers, get_analysis_battery_impact, get_analysis_temperature_impact, predict_calibration_error, predict_reading_uncertainty, get_error_analysis_summary
 
 bp = Blueprint("random_forest", __name__)
 
@@ -59,3 +59,14 @@ def analysis_battery_impact():
 def analysis_temperature_impact():
     return get_analysis_temperature_impact()
 
+@bp.route('/predict/calibration_error', methods=['POST'])
+def predict_calibration_error_route():
+    return predict_calibration_error()
+
+@bp.route('/predict/reading_uncertainty', methods=['POST'])
+def predict_reading_uncertainty_route():
+    return predict_reading_uncertainty()
+
+@bp.route('/analysis/error_summary', methods=['GET'])
+def error_analysis_summary():
+    return get_error_analysis_summary()
